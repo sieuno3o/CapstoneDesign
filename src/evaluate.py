@@ -34,12 +34,14 @@ def direction_accuracy(y_true, y_pred):
     print(f"  방향성 정확도 (Directional Accuracy): {acc:.4f}")
     return acc
 
-def evaluate_and_plot(y_true: pd.Series, y_pred: pd.Series, title="ARIMA Forecast vs Actual", save_dir="results/figures"):
+def evaluate_and_plot(y_true: pd.Series, y_pred: pd.Series, title="ARIMA Forecast vs Actual", save_dir="results/figures", data_name=""):
     """
     평가 지표를 출력하고, 실제 값과 예측 값을 비교하는 시계열 그래프를 저장합니다.
     """
     metrics = regression_metrics(y_true.values, y_pred.values)
-    direction_accuracy(y_true.values, y_pred.values)
+    dir_acc = direction_accuracy(y_true.values, y_pred.values)
+    
+    metrics["direction_accuracy"] = dir_acc
     
     plt.figure(figsize=(14, 6))
     plt.plot(y_true.index, y_true.values, label='Actual Data', color='royalblue')
@@ -52,7 +54,8 @@ def evaluate_and_plot(y_true: pd.Series, y_pred: pd.Series, title="ARIMA Forecas
     plt.grid(True, alpha=0.3)
     
     Path(save_dir).mkdir(parents=True, exist_ok=True)
-    save_path = Path(save_dir) / "forecast_vs_actual.png"
+    save_name = f"forecast_vs_actual_{data_name}.png" if data_name else "forecast_vs_actual.png"
+    save_path = Path(save_dir) / save_name
     plt.savefig(save_path)
     print(f"[INFO] 예측 시각화 이미지를 저장했습니다: {save_path}")
     plt.close()

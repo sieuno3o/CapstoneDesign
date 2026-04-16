@@ -1,20 +1,22 @@
-from src.data_loader import download_yahoo_data
+from src.data_loader import load_price_data
 from src.split import split_time_series
 from src.modeling import find_best_arima_model
 from src.diagnostics import evaluate_residuals
 from src.evaluate import evaluate_and_plot
-from configs.settings import TARGET_TICKER, PERIOD, TARGET_COLUMN
+from configs.settings import RAW_DATA_DIR, TARGET_COLUMN
+import pandas as pd
+import os
 
-def train_classical_pipeline():
+def train_classical_pipeline(data_name: str, file_path: str):
     """
     고전적 모델(ARIMA)을 위한 데이터 로드, 분할, 최적 파라미터 훈련 및 잔차 진단까지의 통합 파이프라인
     """
     print("=" * 50)
-    print(f" [고전적 모델] {TARGET_TICKER} - ARIMA 베이스라인 구축 시작")
+    print(f" [고전적 모델] {data_name} - ARIMA 베이스라인 구축 시작")
     print("=" * 50)
     
-    # 1. 데이터 로드
-    df = download_yahoo_data(TARGET_TICKER, PERIOD)
+    # 1. 데이터 로드 (로컬 CSV 파일 읽기)
+    df = load_price_data(file_path)
     
     # 2. 데이터 시계열 분리 (Train / Validation / Test)
     train_df, val_df, test_df = split_time_series(df, train_ratio=0.7, val_ratio=0.15)
@@ -32,7 +34,7 @@ def train_classical_pipeline():
     best_model = find_best_arima_model(series_train)
     
     # 5. 모형 진단
-    evaluate_residuals(best_model)
+    evaluate_residuals(best_model, data_name=data_name)
     
     # 6. 테스트 데이터 대상 Out-Of-Sample 예측
     print("\n[테스트 셋 기반 예측 및 평가 진행]")
@@ -43,15 +45,38 @@ def train_classical_pipeline():
     series_test = test_df[TARGET_COLUMN]
     
     # 7. 평가 수행 및 그래프 저장
-    evaluate_and_plot(series_test, forecasts, title=f"ARIMA Forecast vs Actual ({TARGET_TICKER})")
+    metrics = evaluate_and_plot(series_test, forecasts, title=f"ARIMA Forecast vs Actual ({data_name})", data_name=data_name)
     
-    print("\n[고전적 모델 파이프라인 구축 완료]")
-    return best_model, train_df, val_df, test_df
+    print(f"\n[{data_name} 고전적 모델 파이프라인 구축 완료]")
+    return best_model, metrics
 
 def train_all_models():
     """
-    4개 모델을 순서대로 학습시키는 통합 함수
+    data/rawdata 내의 모든 종목 데이터를 순회하며 ARIMA 모델을 학습하고, 결과를 종합합니다.
     """
-    # 현재는 고전적 모델만 완성된 상태입니다.
-    train_classical_pipeline()
-    pass
+    csv_files = [f for f in os.listdir(RAW_DATA_DIR) if f.endswith(".csv")]
+    all_metrics = []
+    
+    print(f"총 {len(csv_files)}개의 종목에 대한 고전적 모델 파이프라인(ARIMA)을 일괄 실행합니다.")
+    
+    for f in csv_files:
+        data_name = f.replace("_5y.csv", "").replace(".csv", "")
+        file_path = os.path.join(RAW_DATA_DIR, f)
+        
+        try:
+            _, metrics = train_classical_pipeline(data_name, file_path)
+            metrics["data_name"] = data_name
+            all_metrics.append(metrics)
+        except Exception as e:
+            print(f"[{data_name}] ❌ 학습 중 오류 발생: {e}")
+            
+    # 전체 결과를 DataFrame으로 변환하여 저장
+    df_metrics = pd.DataFrame(all_metrics)
+    os.makedirs("results/metrics", exist_ok=True)
+    summary_path = "results/metrics/classical_arima_summary.csv"
+    df_metrics.to_csv(summary_path, index=False, encoding="utf-8-sig")
+    
+    print("=" * 50)
+    print(f"🚀 전체 {len(csv_files)}개 종목 분석 완료! 결과 요약 저장됨: {summary_path}")
+    print("=" * 50)
+    return df_metrics

@@ -4,7 +4,7 @@ from statsmodels.stats.diagnostic import acorr_ljungbox
 from statsmodels.graphics.tsaplots import plot_acf
 from pathlib import Path
 
-def evaluate_residuals(model, save_dir="results/figures"):
+def evaluate_residuals(model, save_dir="results/figures", data_name=""):
     """
     ARIMA 모델의 잔차(Residual)가 백색 잡음(White Noise) 형태를 띠는지 확인하는 함수.
     1. Ljung-Box Test (잔차 간 자기상관성이 있는지 검정)
@@ -52,7 +52,8 @@ def evaluate_residuals(model, save_dir="results/figures"):
     
     # 저장
     Path(save_dir).mkdir(parents=True, exist_ok=True)
-    save_path = Path(save_dir) / "residual_diagnostics.png"
+    save_name = f"residual_diagnostics_{data_name}.png" if data_name else "residual_diagnostics.png"
+    save_path = Path(save_dir) / save_name
     plt.tight_layout()
     plt.savefig(save_path)
     print(f"[INFO] 잔차 진단 플롯 시각화를 저장했습니다: {save_path}")
