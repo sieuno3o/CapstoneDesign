@@ -36,13 +36,11 @@
 
 ### 1) 고전적 모델
 
-과거 가격 데이터와 시계열 패턴을 활용하는 모델
+과거 가격 데이터와 시계열 패턴을 활용하는 전통적 통계 기반 모델
 
-예시
-
-- ARIMA
-- ARMA
-- 선형회귀
+**확정 모델:**
+- **ARIMA (AutoRegressive Integrated Moving Average)**
+  - 주기성, 추세성 등을 고려하여 가장 기본이 되는 기준(Baseline) 모델로 확정.
 
 ### 2) AI 기반 모델
 
@@ -406,8 +404,8 @@ AI 기반 모델 전용 파일
 
 먼저 yfinance 5년 데이터를 사용해 아래 두 모델을 먼저 구축한다.
 
-- 고전적 모델
-- AI 기반 모델
+- **고전적 모델 (ARIMA 확정)**: `data_loader.py`를 통해 데이터를 수집하고, `stationarity.py`를 통해 정상성 확인 후, `classical_model.py` / `modeling.py`에서 최적 파라미터(p,d,q)를 찾아 학습.
+- AI 기반 모델: Random Forest, XGBoost 등 베이스라인 머신러닝 학습.
 
 ### 2단계: 심리 데이터 수집 및 심리 지수 생성
 
