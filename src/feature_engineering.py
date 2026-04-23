@@ -16,6 +16,15 @@ def add_volatility(df: pd.DataFrame, return_col: str = "log_return") -> pd.DataF
     return result
 
 
+def add_price_structure_features(df: pd.DataFrame) -> pd.DataFrame:
+    result = df.copy()
+    result["hl_diff"] = result["High"] - result["Low"]
+    result["oc_diff"] = result["Open"] - result["Close"]
+    result["close_ma5_gap"] = result["Close"] - result["ma_5"]
+    result["close_ma20_gap"] = result["Close"] - result["ma_20"]
+    return result
+
+
 def merge_price_and_sentiment(
     price_df: pd.DataFrame,
     sentiment_df: pd.DataFrame,
