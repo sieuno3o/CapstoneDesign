@@ -14,6 +14,10 @@ def add_target_next_open(df: pd.DataFrame, open_col: str = "Open") -> pd.DataFra
     result["target_next_open"] = result[open_col].shift(-1)
     return result
 
+def add_target_next_close(df: pd.DataFrame, price_col: str = "Close") -> pd.DataFrame:
+    result = df.copy()
+    result["target_next_close"] = result[price_col].shift(-1)
+    return result
 
 def add_target_direction(df: pd.DataFrame, price_col: str = "Close") -> pd.DataFrame:
     result = df.copy()
