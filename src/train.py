@@ -52,14 +52,27 @@ def train_classical_pipeline(data_name: str, file_path: str):
 
 def train_all_models():
     """
-    data/rawdata 내의 모든 종목 데이터를 순회하며 ARIMA 모델을 학습하고, 결과를 종합합니다.
+    지정된 대상 종목 데이터를 순회하며 ARIMA 모델을 학습하고, 결과를 종합합니다.
     """
+    target_companies = [
+        "hanwha_aerospace", "lig_nex1", "snt_dynamics", "firstec",
+        "samsung_electronics", "sk_hynix", "wonik_ips", "ia",
+        "rtx", "aerovironment", "draganfly", "nvidia", "axt", "maxlinear"
+    ]
+
     csv_files = [f for f in os.listdir(RAW_DATA_DIR) if f.endswith(".csv")]
+    
+    filtered_files = []
+    for f in csv_files:
+        data_name = f.replace("_5y.csv", "").replace(".csv", "")
+        if data_name in target_companies:
+            filtered_files.append(f)
+
     all_metrics = []
     
-    print(f"총 {len(csv_files)}개의 종목에 대한 고전적 모델 파이프라인(ARIMA)을 일괄 실행합니다.")
+    print(f"총 {len(filtered_files)}개의 종목에 대한 고전적 모델 파이프라인(ARIMA)을 일괄 실행합니다.")
     
-    for f in csv_files:
+    for f in filtered_files:
         data_name = f.replace("_5y.csv", "").replace(".csv", "")
         file_path = os.path.join(RAW_DATA_DIR, f)
         
@@ -77,6 +90,6 @@ def train_all_models():
     df_metrics.to_csv(summary_path, index=False, encoding="utf-8-sig")
     
     print("=" * 50)
-    print(f"🚀 전체 {len(csv_files)}개 종목 분석 완료! 결과 요약 저장됨: {summary_path}")
+    print(f"🚀 전체 {len(filtered_files)}개 종목 분석 완료! 결과 요약 저장됨: {summary_path}")
     print("=" * 50)
     return df_metrics
