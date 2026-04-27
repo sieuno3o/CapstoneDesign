@@ -46,11 +46,10 @@
 
 과거 가격 데이터와 파생 변수들을 입력으로 활용하는 머신러닝 기반 모델
 
-예시
+구현 모델:
 
 - Random Forest
-- XGBoost
-- LSTM
+- ANN (인공신경망)
 
 ### 3) 심리 지수만 이용한 모델
 
@@ -353,8 +352,8 @@ AI 기반 모델 전용 파일
 - RMSE
 - MAE
 - MAPE
+- MBE (Mean Bias Error)
 - 방향성 정확도
-- F1-score 등 계산
 
 모든 모델 평가를 같은 기준으로 맞추는 역할을 함
 
@@ -404,8 +403,8 @@ AI 기반 모델 전용 파일
 
 먼저 yfinance 5년 데이터를 사용해 아래 두 모델을 먼저 구축한다.
 
-- **고전적 모델 (ARIMA 확정)**: `data_loader.py`를 통해 데이터를 수집하고, `stationarity.py`를 통해 정상성 확인 후, `classical_model.py` / `modeling.py`에서 최적 파라미터(p,d,q)를 찾아 학습.
-- AI 기반 모델: Random Forest, XGBoost 등 베이스라인 머신러닝 학습.
+- **고전적 모델 (ARIMA 확정)**: `data_loader.py`를 통해 데이터를 수집하고, `stationarity.py`를 통해 정상성 확인 후, `classical_model.py` / `modeling.py`에서 최적 파라미터(p,d,q)를 찾아 학습. (선정된 14개 종목 대상)
+- **AI 기반 모델 (Random Forest, ANN 확정)**: `feature_engineering.py`에서 논문 기반 파생 변수(7/14/21MA, 7STD 등)를 생성하고 `train_ai_pipeline.py`를 통해 학습 및 평가. (선정된 14개 종목 대상)
 
 ### 2단계: 심리 데이터 수집 및 심리 지수 생성
 
@@ -428,8 +427,7 @@ AI 기반 모델 전용 파일
 
 마지막으로 네 모델을 같은 기준으로 비교한다.
 
-- RMSE
-- MAE
+- RMSE, MAE, MAPE, MBE
 - 방향성 정확도
 - 결과 해석
 
