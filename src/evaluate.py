@@ -9,13 +9,15 @@ def regression_metrics(y_true, y_pred):
     mae = mean_absolute_error(y_true, y_pred)
     rmse = np.sqrt(mean_squared_error(y_true, y_pred))
     mape = mean_absolute_percentage_error(y_true, y_pred) * 100
+    mbe = np.mean(y_pred - y_true)
     
     print("\n=== Model Prediction Metrics ===")
     print(f"  RMSE : {rmse:.4f}")
     print(f"  MAE  : {mae:.4f}")
     print(f"  MAPE : {mape:.4f}%")
+    print(f"  MBE  : {mbe:.4f}")
     
-    return {"mae": mae, "rmse": rmse, "mape": mape}
+    return {"mae": mae, "rmse": rmse, "mape": mape, "mbe": mbe}
 
 
 def direction_accuracy(y_true, y_pred):
