@@ -114,7 +114,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="네이버 금융 뉴스 제목과 날짜를 크롤링하여 CSV로 저장합니다.")
-    parser.add_argument("--output", "-o", default="naver_finance_news.csv", help="저장할 CSV 파일 경로")
+    parser.add_argument("--output", "-o", default="results/metrics/naver_finance_news.csv", help="저장할 CSV 파일 경로")
     parser.add_argument("--years", type=int, default=5, help="최근 몇 년간 뉴스까지 수집할지 지정")
     parser.add_argument("--section-id", default="101", help="네이버 금융 뉴스 section_id")
     parser.add_argument("--section-id2", default="258", help="네이버 금융 뉴스 section_id2")
