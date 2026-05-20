@@ -96,10 +96,12 @@ def add_extended_features(df: pd.DataFrame) -> pd.DataFrame:
     res["Stoch_K"] = 100 * (res["Close"] - lowest_low) / (highest_high - lowest_low)
     res["Stoch_D"] = res["Stoch_K"].rolling(window=3).mean()  # %D = %K의 3일 이동평균
 
-    # --- 10. Lag Return Features ---
+    # --- 10. Lag Return Features & MA Return ---
     # 과거 수익률 정보를 직접 피처로 제공 (단기 추세 기억 효과)
     res["lag_1_return"] = res["daily_return"].shift(1)
     res["lag_2_return"] = res["daily_return"].shift(2)
     res["lag_3_return"] = res["daily_return"].shift(3)
+    # MA3_return: 3일 수익률 이동평균 (단기 모멘텀 스무딩 효과)
+    res["MA3_return"] = res["daily_return"].rolling(window=3).mean()
 
     return res

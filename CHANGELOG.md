@@ -108,6 +108,19 @@
 - 예측 그래프: `figures/` → **`results/figures/`**
 - 종목별 결과 CSV: `results/` → **`results/metrics/`**
 
+---
+
+### 6. `MA3_return` (3일 수익률 이동평균) 변수 추가
+
+팀원 요청 사항 반영.
+
+**수정 파일: `src/feature_engineering_extended.py`**
+- `MA3_return = daily_return.rolling(window=3).mean()` 추가
+- `lag_1/2/3_return`(특정 과거 시점 수익률 레그)과 달리 최근 3일 수익률의 **평균 방향성** 포착
+
+**수정 파일: `src/train_rf_extended.py` — `EXTENDED_FEATURES`**
+- `"MA3_return"` 목록에 추가
+
 
 ---
 

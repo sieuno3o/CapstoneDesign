@@ -62,7 +62,8 @@ EXTENDED_FEATURES = ORIGINAL_FEATURES + [
     "ATR_14",           # 변동성: 고가/저가/전일종가 모두 활용
     "OBV",              # 거래량-가격 방향 결합
     "Stoch_K", "Stoch_D",  # 스토캐스틱 오실레이터
-    "lag_1_return", "lag_2_return", "lag_3_return"  # 단기 수익률 래그
+    "lag_1_return", "lag_2_return", "lag_3_return",  # 단기 수익률 래그
+    "MA3_return"        # 3일 수익률 이동평균 (단기 모멘텀 스무딩)
 ]
 
 TARGET_COL = "target_next_close"
