@@ -61,14 +61,45 @@ def add_extended_features(df: pd.DataFrame) -> pd.DataFrame:
     res["abs_return"] = res["daily_return"].abs()
     res["high_low_ratio"] = (res["High"] - res["Low"]) / res["Close"]
     res["open_close_ratio"] = (res["Close"] - res["Open"]) / res["Open"]
-    res["volatility_5"] = res["daily_return"].rolling(window=5).std()
-    res["volatility_10"] = res["daily_return"].rolling(window=10).std()
+    # pct_volatility_* : daily_return(pct_change) 기반 변동성
+    # volatility_7(log_return 기반)과 구분하기 위해 pct_ 접두사 사용
+    res["pct_volatility_5"] = res["daily_return"].rolling(window=5).std()
+    res["pct_volatility_10"] = res["daily_return"].rolling(window=10).std()
     
     # --- 6. Volume & Liquidity ---
     res["Volume_MA5"] = res["Volume"].rolling(window=5).mean()
     res["Volume_MA20"] = res["Volume"].rolling(window=20).mean()
     res["Volume_change"] = res["Volume"].pct_change()
     res["Volume_ratio"] = res["Volume"] / res["Volume_MA20"]
-    res["Trading_value"] = res["Close"] * res["Volume"]
-    
+    # Trading_value = Close * Volume 은 값이 매우 크므로 로그 변환 적용
+    res["log_trading_value"] = np.log1p(res["Close"] * res["Volume"])
+
+    # --- 7. ATR (Average True Range) ---
+    # 고가/저가/전일종가를 모두 활용하는 변동성 지표
+    prev_close = res["Close"].shift(1)
+    tr = pd.concat([
+        res["High"] - res["Low"],
+        (res["High"] - prev_close).abs(),
+        (res["Low"] - prev_close).abs()
+    ], axis=1).max(axis=1)
+    res["ATR_14"] = tr.ewm(alpha=1/14, adjust=False).mean()
+
+    # --- 8. OBV (On-Balance Volume) ---
+    # 가격 상승일 거래량 누적 - 가격 하락일 거래량 누적
+    direction = np.sign(res["Close"].diff())
+    res["OBV"] = (direction * res["Volume"]).cumsum()
+
+    # --- 9. Stochastic Oscillator (%K, %D) ---
+    period_k = 14
+    lowest_low = res["Low"].rolling(window=period_k).min()
+    highest_high = res["High"].rolling(window=period_k).max()
+    res["Stoch_K"] = 100 * (res["Close"] - lowest_low) / (highest_high - lowest_low)
+    res["Stoch_D"] = res["Stoch_K"].rolling(window=3).mean()  # %D = %K의 3일 이동평균
+
+    # --- 10. Lag Return Features ---
+    # 과거 수익률 정보를 직접 피처로 제공 (단기 추세 기억 효과)
+    res["lag_1_return"] = res["daily_return"].shift(1)
+    res["lag_2_return"] = res["daily_return"].shift(2)
+    res["lag_3_return"] = res["daily_return"].shift(3)
+
     return res

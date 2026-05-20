@@ -60,11 +60,29 @@ if __name__ == "__main__":
         print("=" * 80)
         print(f"종합 결과 파일 저장 경로: {summary_save_path}\n")
         
-        # Calculate and print average metrics across all companies for each model
-        df_avg = df_summary.groupby("Model")[["RMSE", "MAE", "R2", "MAPE"]].mean().reset_index()
+        # 전체 종목 평균 성능 비교 테이블
+        df_avg = df_summary.groupby("Model")[["rmse", "mae", "mape", "mbe", "r2", "direction_accuracy"]].mean().reset_index()
         print("### [전체 종목 평균 성능 비교 테이블]")
         print("-" * 80)
         print(df_avg.to_string(index=False))
         print("-" * 80)
+
+        # 기본 RF vs 확장 RF 성능 개선 요약
+        print("\n### [기본 RF → 확장 RF RMSE 개선율 (종목별)]")
+        print("-" * 80)
+        df_exist = df_summary[df_summary["Model"] == "Existing RF"][["Company", "rmse"]].rename(columns={"rmse": "rmse_existing"})
+        df_ext   = df_summary[df_summary["Model"] == "Extended RF"][["Company", "rmse"]].rename(columns={"rmse": "rmse_extended"})
+        df_compare = pd.merge(df_exist, df_ext, on="Company")
+        df_compare["rmse_improvement_%"] = (
+            (df_compare["rmse_existing"] - df_compare["rmse_extended"]) / df_compare["rmse_existing"] * 100
+        ).round(2)
+        df_compare["개선여부"] = df_compare["rmse_improvement_%"].apply(
+            lambda x: "✅ 개선" if x > 0 else "❌ 악화"
+        )
+        print(df_compare.to_string(index=False))
+        print("-" * 80)
+        improved = (df_compare["rmse_improvement_%"] > 0).sum()
+        print(f"\n전체 {len(df_compare)}개 종목 중 {improved}개 개선 / {len(df_compare)-improved}개 악화")
     else:
         print("[오류] 결과가 전혀 수집되지 않았습니다.")
+

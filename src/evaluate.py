@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
-from sklearn.metrics import mean_absolute_error, mean_squared_error, accuracy_score, mean_absolute_percentage_error
+from sklearn.metrics import mean_absolute_error, mean_squared_error, accuracy_score, mean_absolute_percentage_error, r2_score
 
 
 def regression_metrics(y_true, y_pred):
@@ -10,14 +10,16 @@ def regression_metrics(y_true, y_pred):
     rmse = np.sqrt(mean_squared_error(y_true, y_pred))
     mape = mean_absolute_percentage_error(y_true, y_pred) * 100
     mbe = np.mean(y_pred - y_true)
+    r2 = r2_score(y_true, y_pred)
     
     print("\n=== Model Prediction Metrics ===")
     print(f"  RMSE : {rmse:.4f}")
     print(f"  MAE  : {mae:.4f}")
     print(f"  MAPE : {mape:.4f}%")
     print(f"  MBE  : {mbe:.4f}")
+    print(f"  R²   : {r2:.4f}")
     
-    return {"mae": mae, "rmse": rmse, "mape": mape, "mbe": mbe}
+    return {"rmse": rmse, "mae": mae, "mape": mape, "mbe": mbe, "r2": r2}
 
 
 def direction_accuracy(y_true, y_pred):

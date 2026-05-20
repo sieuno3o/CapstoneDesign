@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, mean_absolute_percentage_error
 
 from src.data_loader import load_price_data
 from src.preprocess import (
@@ -20,6 +19,7 @@ from src.feature_engineering import (
 from src.feature_engineering_extended import add_extended_features
 from src.split import split_time_series
 from src.modeling import find_best_arima_model
+from src.evaluate import regression_metrics, direction_accuracy
 from sklearn.ensemble import RandomForestRegressor
 
 def train_rf_model(X_train, y_train):
@@ -29,13 +29,6 @@ def train_rf_model(X_train, y_train):
     )
     model.fit(X_train, y_train)
     return model
-
-def predict_ai_model(model, X):
-    pred = model.predict(X)
-    # Keras returns 2D array, RF returns 1D array
-    if len(pred.shape) > 1 and pred.shape[1] == 1:
-        pred = pred.flatten()
-    return pred
 
 
 ORIGINAL_FEATURES = [
@@ -49,29 +42,41 @@ ORIGINAL_FEATURES = [
 ]
 
 EXTENDED_FEATURES = ORIGINAL_FEATURES + [
+    # 모멘텀/추세 지표
     "RSI_14",
     "MACD", "MACD_signal", "MACD_hist",
+    # 볼린저밴드 (절대 가격 + 비율 변수 함께 포함)
     "BB_upper", "BB_lower", "BB_width", "BB_percent",
+    # 이동평균 (절대 가격 + 비율 변수 함께 포함)
     "MA_3", "MA_5", "MA_10", "MA_20",
     "Close_MA5_ratio", "Close_MA20_ratio", "MA5_MA20_gap",
+    # 수익률 및 가격 구조
     "daily_return", "abs_return", "high_low_ratio", "open_close_ratio",
-    "volatility_5", "volatility_10",
+    # 변동성 (pct 기반, volatility_7은 ORIGINAL_FEATURES에 이미 포함됨)
+    "pct_volatility_5", "pct_volatility_10",
+    # 거래량 (절대값 + 비율 변수 함께 포함)
     "Volume_MA5", "Volume_MA20", "Volume_change", "Volume_ratio",
-    "Trading_value"
+    # 거래대금 원본 + 로그 변환 함께 포함
+    "log_trading_value",
+    # 추가 기술적 지표
+    "ATR_14",           # 변동성: 고가/저가/전일종가 모두 활용
+    "OBV",              # 거래량-가격 방향 결합
+    "Stoch_K", "Stoch_D",  # 스토캐스틱 오실레이터
+    "lag_1_return", "lag_2_return", "lag_3_return"  # 단기 수익률 래그
 ]
 
 TARGET_COL = "target_next_close"
 
 
-def calculate_metrics(y_true, y_pred):
+def calculate_metrics(y_true, y_pred, model_name: str):
     """
-    Computes RMSE, MAE, R^2, and MAPE metrics.
+    공통 evaluate.py 함수를 사용해 RMSE, MAE, MAPE, MBE, R², 방향성 정확도를 계산합니다.
     """
-    mae = mean_absolute_error(y_true, y_pred)
-    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
-    r2 = r2_score(y_true, y_pred)
-    mape = mean_absolute_percentage_error(y_true, y_pred) * 100
-    return {"RMSE": rmse, "MAE": mae, "R2": r2, "MAPE": mape}
+    metrics = regression_metrics(y_true, y_pred)
+    dir_acc = direction_accuracy(y_true, y_pred)
+    metrics["direction_accuracy"] = dir_acc
+    metrics["Model"] = model_name
+    return metrics
 
 
 def train_rf_extended_pipeline(data_name: str, file_path: str):
@@ -148,32 +153,51 @@ def train_rf_extended_pipeline(data_name: str, file_path: str):
     X_test_orig = scaler_orig.transform(test_df[ORIGINAL_FEATURES])
     
     rf_model_orig = train_rf_model(X_train_orig, y_train)
-    rf_pred_orig = predict_ai_model(rf_model_orig, X_test_orig)
+    rf_pred_orig = rf_model_orig.predict(X_test_orig)
     results["Existing RF"] = rf_pred_orig
 
-    # (D) 추가 입력변수를 적용한 Random Forest 모델
+    # 8-D. 추가 입력변수를 적용한 Random Forest 모델
     print(f"\n[{data_name}] 추가 입력변수 적용 Random Forest 학습 중...")
     scaler_ext = MinMaxScaler()
     X_train_ext = scaler_ext.fit_transform(train_df[EXTENDED_FEATURES])
     X_test_ext = scaler_ext.transform(test_df[EXTENDED_FEATURES])
     
     rf_model_ext = train_rf_model(X_train_ext, y_train)
-    rf_pred_ext = predict_ai_model(rf_model_ext, X_test_ext)
+    rf_pred_ext = rf_model_ext.predict(X_test_ext)
     results["Extended RF"] = rf_pred_ext
 
-    # 9. 모델 평가
+    # 8-E. 피처 중요도 시각화 (Extended RF)
+    importances = rf_model_ext.feature_importances_
+    feat_series = pd.Series(importances, index=EXTENDED_FEATURES).sort_values(ascending=True)
+    top_n = min(20, len(feat_series))
+    fig, ax = plt.subplots(figsize=(10, 8), dpi=100)
+    feat_series.tail(top_n).plot(kind="barh", ax=ax, color="steelblue")
+    ax.set_title(f"Feature Importance (Extended RF) - {data_name.replace('_', ' ').title()}",
+                 fontsize=13, fontweight="bold")
+    ax.set_xlabel("Importance", fontsize=11)
+    ax.grid(True, alpha=0.3)
+    Path("results/figures").mkdir(parents=True, exist_ok=True)
+    fi_path = f"results/figures/{data_name}_feature_importance.png"
+    plt.tight_layout()
+    plt.savefig(fi_path, bbox_inches="tight")
+    plt.close()
+    print(f"[피처 중요도 그래프 저장 완료] -> {fi_path}")
+
+    # 9. 모델 평가 (공통 evaluate.py 함수로 통일)
+    print(f"\n{'='*60}")
+    print(f"[{data_name}] 모델별 평가 결과")
     metrics_list = []
     for model_name, y_pred in results.items():
-        metrics = calculate_metrics(y_test.values, y_pred)
-        metrics["Model"] = model_name
+        print(f"\n--- {model_name} ---")
+        metrics = calculate_metrics(y_test.values, y_pred, model_name)
         metrics_list.append(metrics)
     
     df_metrics = pd.DataFrame(metrics_list)
-    df_metrics = df_metrics[["Model", "RMSE", "MAE", "R2", "MAPE"]]
+    df_metrics = df_metrics[["Model", "rmse", "mae", "mape", "mbe", "r2", "direction_accuracy"]]
     
-    # 평가 결과 저장
-    Path("results").mkdir(parents=True, exist_ok=True)
-    results_save_path = f"results/{data_name}_rf_extended_results.csv"
+    # 평가 결과 저장 (results/metrics/ 로 경로 통일)
+    Path("results/metrics").mkdir(parents=True, exist_ok=True)
+    results_save_path = f"results/metrics/{data_name}_rf_extended_results.csv"
     df_metrics.to_csv(results_save_path, index=False, encoding="utf-8-sig")
     print(f"[평가 결과 저장 완료] -> {results_save_path}")
     print(df_metrics.to_string(index=False))
@@ -191,10 +215,10 @@ def train_rf_extended_pipeline(data_name: str, file_path: str):
     plt.ylabel("Price", fontsize=12)
     plt.legend(fontsize=10, loc="best")
     plt.grid(True, alpha=0.3)
-    
-    # Save graph
-    Path("figures").mkdir(parents=True, exist_ok=True)
-    figure_save_path = f"figures/{data_name}_rf_extended_prediction.png"
+
+    # 예측 그래프 저장 경로 results/figures/ 로 통일
+    Path("results/figures").mkdir(parents=True, exist_ok=True)
+    figure_save_path = f"results/figures/{data_name}_rf_extended_prediction.png"
     plt.savefig(figure_save_path, bbox_inches="tight")
     plt.close()
     print(f"[예측 그래프 저장 완료] -> {figure_save_path}")
