@@ -121,6 +121,35 @@
 **수정 파일: `src/train_rf_extended.py` — `EXTENDED_FEATURES`**
 - `"MA3_return"` 목록에 추가
 
+---
+
+## [2026-05-21] 확장 ANN 모델 구현
+
+기존 ANN(`train_ai_pipeline.py`)은 원본 7개 변수만 사용하고 있었음.  
+확장 RF와 동일한 30개+ 피처를 ANN에도 적용하여 공정한 모델 비교 환경 구성.
+
+### 변경 파일: `src/train_rf_extended.py`
+
+**추가 내용 (8-F 단계):**
+- `src/ai_model`에서 `train_ann_model`, `predict_ai_model` import
+- Extended RF와 **동일한 `scaler_ext` 스케일러, 동일한 `EXTENDED_FEATURES`** 재사용
+- `train_ann_model(X_train_ext, y_train.values)` 호출 → 64→32→1 구조 ANN 학습 (100 epoch)
+- `results["Extended ANN"]` 에 예측값 저장
+
+**결과 변경:**
+- 비교 모델: Benchmark / ARIMA / Existing RF / Extended RF → **+ Extended ANN** (5개 모델)
+- 저장 파일명: `{data_name}_rf_extended_results.csv` → **`{data_name}_ai_extended_results.csv`**
+- 예측 그래프: `{data_name}_rf_extended_prediction.png` → **`{data_name}_ai_extended_prediction.png`**
+  - Extended ANN 선: `forestgreen` 색상으로 추가
+
+### 변경 파일: `run_rf_extended.py`
+
+- 종합 결과 파일명: `rf_extended_models_summary.csv` → **`ai_extended_models_summary.csv`**
+- 기본 RF vs 확장 RF/ANN 개선율 비교 테이블 업데이트:
+  - `RF_improvement_%` 와 `ANN_improvement_%` 두 컬럼으로 확장
+  - 확장 RF / 확장 ANN 각각 몇 개 종목에서 개선됐는지 최종 요약 출력
+
+
 
 ---
 

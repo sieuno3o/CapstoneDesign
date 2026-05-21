@@ -52,7 +52,7 @@ if __name__ == "__main__":
     if all_results:
         # Combine all metrics and save to results/metrics
         df_summary = pd.concat(all_results, ignore_index=True)
-        summary_save_path = "results/metrics/rf_extended_models_summary.csv"
+        summary_save_path = "results/metrics/ai_extended_models_summary.csv"
         df_summary.to_csv(summary_save_path, index=False, encoding="utf-8-sig")
         
         print("\n" + "=" * 80)
@@ -71,18 +71,25 @@ if __name__ == "__main__":
         print("\n### [기본 RF → 확장 RF RMSE 개선율 (종목별)]")
         print("-" * 80)
         df_exist = df_summary[df_summary["Model"] == "Existing RF"][["Company", "rmse"]].rename(columns={"rmse": "rmse_existing"})
-        df_ext   = df_summary[df_summary["Model"] == "Extended RF"][["Company", "rmse"]].rename(columns={"rmse": "rmse_extended"})
+        df_ext   = df_summary[df_summary["Model"] == "Extended RF"][["Company", "rmse"]].rename(columns={"rmse": "rmse_extended_rf"})
+        df_ann   = df_summary[df_summary["Model"] == "Extended ANN"][["Company", "rmse"]].rename(columns={"rmse": "rmse_extended_ann"})
         df_compare = pd.merge(df_exist, df_ext, on="Company")
-        df_compare["rmse_improvement_%"] = (
-            (df_compare["rmse_existing"] - df_compare["rmse_extended"]) / df_compare["rmse_existing"] * 100
+        df_compare = pd.merge(df_compare, df_ann, on="Company")
+        df_compare["RF_improvement_%"] = (
+            (df_compare["rmse_existing"] - df_compare["rmse_extended_rf"]) / df_compare["rmse_existing"] * 100
         ).round(2)
-        df_compare["개선여부"] = df_compare["rmse_improvement_%"].apply(
-            lambda x: "✅ 개선" if x > 0 else "❌ 악화"
-        )
+        df_compare["ANN_improvement_%"] = (
+            (df_compare["rmse_existing"] - df_compare["rmse_extended_ann"]) / df_compare["rmse_existing"] * 100
+        ).round(2)
+        df_compare["RF의과자"] = df_compare["RF_improvement_%"].apply(lambda x: "✅ 개선" if x > 0 else "❌ 악화")
+        df_compare["ANN의과자"] = df_compare["ANN_improvement_%"].apply(lambda x: "✅ 개선" if x > 0 else "❌ 악화")
         print(df_compare.to_string(index=False))
         print("-" * 80)
-        improved = (df_compare["rmse_improvement_%"] > 0).sum()
-        print(f"\n전체 {len(df_compare)}개 종목 중 {improved}개 개선 / {len(df_compare)-improved}개 악화")
+        rf_improved  = (df_compare["RF_improvement_%"] > 0).sum()
+        ann_improved = (df_compare["ANN_improvement_%"] > 0).sum()
+        total = len(df_compare)
+        print(f"\n확장 RF : {total}개 종목 중 {rf_improved}개 개선 / {total - rf_improved}개 악화")
+        print(f"확장 ANN: {total}개 종목 중 {ann_improved}개 개선 / {total - ann_improved}개 악화")
     else:
         print("[오류] 결과가 전혀 수집되지 않았습니다.")
 

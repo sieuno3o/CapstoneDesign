@@ -20,6 +20,7 @@ from src.feature_engineering_extended import add_extended_features
 from src.split import split_time_series
 from src.modeling import find_best_arima_model
 from src.evaluate import regression_metrics, direction_accuracy
+from src.ai_model import train_ann_model, predict_ai_model
 from sklearn.ensemble import RandomForestRegressor
 
 def train_rf_model(X_train, y_train):
@@ -184,6 +185,13 @@ def train_rf_extended_pipeline(data_name: str, file_path: str):
     plt.close()
     print(f"[피처 중요도 그래프 저장 완료] -> {fi_path}")
 
+    # 8-F. 확장 피처를 적용한 ANN 모델
+    print(f"\n[{data_name}] 확장 피처 ANN 학습 중...")
+    # 확장 RF와 동일한 스케일러를 공유하여 스케일링 합니다.
+    ann_model_ext = train_ann_model(X_train_ext, y_train.values)
+    ann_pred_ext = predict_ai_model(ann_model_ext, X_test_ext)
+    results["Extended ANN"] = ann_pred_ext
+
     # 9. 모델 평가 (공통 evaluate.py 함수로 통일)
     print(f"\n{'='*60}")
     print(f"[{data_name}] 모델별 평가 결과")
@@ -198,7 +206,7 @@ def train_rf_extended_pipeline(data_name: str, file_path: str):
     
     # 평가 결과 저장 (results/metrics/ 로 경로 통일)
     Path("results/metrics").mkdir(parents=True, exist_ok=True)
-    results_save_path = f"results/metrics/{data_name}_rf_extended_results.csv"
+    results_save_path = f"results/metrics/{data_name}_ai_extended_results.csv"
     df_metrics.to_csv(results_save_path, index=False, encoding="utf-8-sig")
     print(f"[평가 결과 저장 완료] -> {results_save_path}")
     print(df_metrics.to_string(index=False))
@@ -209,7 +217,8 @@ def train_rf_extended_pipeline(data_name: str, file_path: str):
     plt.plot(test_dates, results["Benchmark"], label="Benchmark (Naive)", color="gray", linestyle=":", alpha=0.8)
     plt.plot(test_dates, results["ARIMA"], label="ARIMA Forecast", color="red", linestyle="-.", alpha=0.8)
     plt.plot(test_dates, results["Existing RF"], label="Existing RF (7 features)", color="orange", linestyle="--", alpha=0.8)
-    plt.plot(test_dates, results["Extended RF"], label="Extended RF (26+ features)", color="royalblue", linestyle="-", alpha=0.9)
+    plt.plot(test_dates, results["Extended RF"], label="Extended RF (30+ features)", color="royalblue", linestyle="-", alpha=0.9)
+    plt.plot(test_dates, results["Extended ANN"], label="Extended ANN (30+ features)", color="forestgreen", linestyle="-", alpha=0.9)
     
     plt.title(f"Model Predictions Comparison - {data_name.replace('_', ' ').title()}", fontsize=14, fontweight="bold")
     plt.xlabel("Date", fontsize=12)
@@ -219,7 +228,7 @@ def train_rf_extended_pipeline(data_name: str, file_path: str):
 
     # 예측 그래프 저장 경로 results/figures/ 로 통일
     Path("results/figures").mkdir(parents=True, exist_ok=True)
-    figure_save_path = f"results/figures/{data_name}_rf_extended_prediction.png"
+    figure_save_path = f"results/figures/{data_name}_ai_extended_prediction.png"
     plt.savefig(figure_save_path, bbox_inches="tight")
     plt.close()
     print(f"[예측 그래프 저장 완료] -> {figure_save_path}")
