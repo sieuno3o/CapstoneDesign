@@ -24,16 +24,15 @@ def regression_metrics(y_true, y_pred):
 
 def direction_accuracy(y_true, y_pred):
     """
-    등락(방향성) 맞춤 여부 계산 (현재값 대비 다음 날 상승/하락 여부)
+    등락(방향성) 맞춤 여부 계산.
+    기준: 전일 실제 종가(y_true[t-1]) 대비 내일 실제/예측 종가의 상승 여부 비교
+    - 실제 방향: y_true[t] > y_true[t-1]
+    - 예측 방향: y_pred[t] > y_true[t-1]  ← 전일 실제값을 기준으로 사용
     """
-    # 실제값 방향성 (t 대비 t+1)
-    true_diff = np.diff(y_true)
-    true_dir = (true_diff > 0).astype(int)
-    
-    # 예측값 방향성 (t 대비 t+1)
-    pred_diff = np.diff(y_pred)
-    pred_dir = (pred_diff > 0).astype(int)
-    
+    # 전일 실제 종가 기준으로 비교 (t-1은 실제값, t는 예측/실제값)
+    true_dir = (y_true[1:] > y_true[:-1]).astype(int)   # 실제 방향
+    pred_dir = (y_pred[1:] > y_true[:-1]).astype(int)   # 예측 방향 (기준: 전일 실제값)
+
     acc = accuracy_score(true_dir, pred_dir)
     print(f"  방향성 정확도 (Directional Accuracy): {acc:.4f}")
     return acc

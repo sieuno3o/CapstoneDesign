@@ -118,7 +118,8 @@ def train_rf_extended_pipeline(data_name: str, file_path: str):
     # dates for plotting
     test_dates = pd.to_datetime(test_df["Date"])
     y_train = train_df[TARGET_COL]
-    y_test = test_df[TARGET_COL]
+    y_val   = val_df[TARGET_COL]
+    y_test  = test_df[TARGET_COL]
     
     # 8. 4가지 모델 예측 수행
     results = {}
@@ -162,7 +163,8 @@ def train_rf_extended_pipeline(data_name: str, file_path: str):
     print(f"\n[{data_name}] 추가 입력변수 적용 Random Forest 학습 중...")
     scaler_ext = MinMaxScaler()
     X_train_ext = scaler_ext.fit_transform(train_df[EXTENDED_FEATURES])
-    X_test_ext = scaler_ext.transform(test_df[EXTENDED_FEATURES])
+    X_val_ext   = scaler_ext.transform(val_df[EXTENDED_FEATURES])   # ← val_df 스케일링
+    X_test_ext  = scaler_ext.transform(test_df[EXTENDED_FEATURES])
     
     rf_model_ext = train_rf_model(X_train_ext, y_train)
     rf_pred_ext = rf_model_ext.predict(X_test_ext)
@@ -188,7 +190,11 @@ def train_rf_extended_pipeline(data_name: str, file_path: str):
     # 8-F. 확장 피처를 적용한 ANN 모델
     print(f"\n[{data_name}] 확장 피처 ANN 학습 중...")
     # 확장 RF와 동일한 스케일러를 공유하여 스케일링 합니다.
-    ann_model_ext = train_ann_model(X_train_ext, y_train.values)
+    # val_df를 validation_data로 전달하여 EarlyStopping이 올바르게 동작하도록 합니다.
+    ann_model_ext = train_ann_model(
+        X_train_ext, y_train.values,
+        X_val=X_val_ext, y_val=y_val.values
+    )
     ann_pred_ext = predict_ai_model(ann_model_ext, X_test_ext)
     results["Extended ANN"] = ann_pred_ext
 
