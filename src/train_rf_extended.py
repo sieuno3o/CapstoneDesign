@@ -40,40 +40,40 @@ def train_rf_model(X_train, y_train):
     return model
 
 
+# ── 기존 논문 변수 (비교 기준용, 7개) ───────────────────────────────────────
 ORIGINAL_FEATURES = [
-    "Volume",
-    "ma_7",
-    "ma_14",
-    "ma_21",
-    "volatility_7",
-    "hl_diff",
-    "oc_diff"
+    "Volume",       # 당일 거래량
+    "ma_7",         # 7일 이동평균 (기존 논문)
+    "ma_14",        # 14일 이동평균 (기존 논문)
+    "ma_21",        # 21일 이동평균 (기존 논문)
+    "volatility_7", # 7일 수익률 표준편차
+    "hl_diff",      # 고가 - 저가
+    "oc_diff"       # 시가 - 종가
 ]
 
-EXTENDED_FEATURES = ORIGINAL_FEATURES + [
-    # 모멘텀/추세 지표
-    "RSI_14",
-    "MACD", "MACD_signal", "MACD_hist",
-    # 볼린저밴드 (절대 가격 + 비율 변수 함께 포함)
-    "BB_upper", "BB_lower", "BB_width", "BB_percent",
-    # 이동평균 (절대 가격 + 비율 변수 함께 포함)
-    "MA_3", "MA_5", "MA_10", "MA_20",
-    "Close_MA5_ratio", "Close_MA20_ratio", "MA5_MA20_gap",
-    # 수익률 및 가격 구조
-    "daily_return", "abs_return", "high_low_ratio", "open_close_ratio",
-    # 변동성 (pct 기반, volatility_7은 ORIGINAL_FEATURES에 이미 포함됨)
-    "pct_volatility_5", "pct_volatility_10",
-    # 거래량 (절대값 + 비율 변수 함께 포함)
-    "Volume_MA5", "Volume_MA20", "Volume_change", "Volume_ratio",
-    # 거래대금 원본 + 로그 변환 함께 포함
-    "log_trading_value",
-    # 추가 기술적 지표
-    "ATR_14",           # 변동성: 고가/저가/전일종가 모두 활용
-    "OBV",              # 거래량-가격 방향 결합
-    "Stoch_K", "Stoch_D",  # 스토캐스틱 오실레이터
-    "lag_1_return", "lag_2_return", "lag_3_return",  # 단기 수익률 래그
-    "MA3_return"        # 3일 수익률 이동평균 (단기 모멘텀 스무딩)
+# ── Ablation Study 기반 최종 확정 변수 (총 10개, 독립 정의) ──────────────────
+# 선정 기준: 5개 국내 종목 Ablation Study 전 종목 Top-10 출현 빈도 + Feature Importance
+# ※ ma_7/14/21(ORIGINAL) → MA_3~MA_20 계열로 통일하여 이동평균 중복 제거
+# ※ MACD 3개: 제거 실험에서 RMSE 차이 0.017% → 영향 없음 확인 (교수님 지적 일치)
+EXTENDED_FEATURES = [
+    # ① 이동평균 4개 (단기~중장기 추세 — 전 종목 Top-3 압도적)
+    "MA_3",         # 3일: 삼성 94.1%, SK 59.2%, LIG 47.3% — 전 종목 5/5 1~3위
+    "MA_5",         # 5일: 전 종목 5/5 Top-5 이내 안정적 등장
+    "MA_10",        # 10일: 4/5 종목 Top-10 (중기 추세 보완)
+    "MA_20",        # 20일: 4/5 종목 Top-10 (볼린저밴드 기준선과 동일)
+    # ② 볼린저밴드 상단 (가격 위치·변동성 레벨 — 4/5 종목 등장)
+    "BB_upper",     # SK 2위, SNT 2위, LIG 5위, 한화 8위
+    # ③ OBV — 거래량·가격 방향 결합 (수급 흐름 — 4/5 종목 등장)
+    "OBV",          # SNT 1위, LIG 2위, 삼성 4위, 한화 9위
+    # ④ ATR_14 — 고가·저가·전일종가 기반 실제 변동폭 (변동성 대표)
+    "ATR_14",       # SK 9위, 한화 10위: MACD·래그 대비 유일하게 유효한 모멘텀 보조
+    # ⑤ 거래량·가격 구조 기본값 (해석 가능성 확보)
+    "Volume",       # 당일 총 거래량 (수급 규모)
+    "hl_diff",      # 고가 - 저가 (일중 변동폭)
+    "volatility_7", # 7일 수익률 표준편차 (단기 변동성 연속성)
 ]
+# ※ 총 10개 | 제거: ma_7/14/21(MA_3~20으로 통일), MACD 3개, lag 3개,
+#   Stoch_K/D, pct_volatility, log_trading_value, Close_MA_ratio 등 31개
 
 TARGET_COL = "target_next_close"
 
