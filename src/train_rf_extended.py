@@ -2,8 +2,16 @@ from pathlib import Path
 import os
 import pandas as pd
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 from sklearn.preprocessing import MinMaxScaler
+
+# ── 한글 폰트 설정 (macOS: AppleGothic, 없으면 기본 유지) ──────────────────
+_korean_fonts = [f.name for f in fm.fontManager.ttflist if "Gothic" in f.name or "Nanum" in f.name or "Apple" in f.name]
+if _korean_fonts:
+    matplotlib.rc("font", family=_korean_fonts[0])
+matplotlib.rcParams["axes.unicode_minus"] = False  # 마이너스 기호 깨짐 방지
 
 from src.data_loader import load_price_data
 from src.preprocess import (
@@ -217,26 +225,122 @@ def train_rf_extended_pipeline(data_name: str, file_path: str):
     print(f"[평가 결과 저장 완료] -> {results_save_path}")
     print(df_metrics.to_string(index=False))
 
-    # 10. 시각화 (예측 그래프)
-    plt.figure(figsize=(14, 7), dpi=100)
-    plt.plot(test_dates, y_test.values, label="Actual Close", color="black", linewidth=2.0)
-    plt.plot(test_dates, results["Benchmark"], label="Benchmark (Naive)", color="gray", linestyle=":", alpha=0.8)
-    plt.plot(test_dates, results["ARIMA"], label="ARIMA Forecast", color="red", linestyle="-.", alpha=0.8)
-    plt.plot(test_dates, results["Existing RF"], label="Existing RF (7 features)", color="orange", linestyle="--", alpha=0.8)
-    plt.plot(test_dates, results["Extended RF"], label="Extended RF (30+ features)", color="royalblue", linestyle="-", alpha=0.9)
-    plt.plot(test_dates, results["Extended ANN"], label="Extended ANN (30+ features)", color="forestgreen", linestyle="-", alpha=0.9)
-    
-    plt.title(f"Model Predictions Comparison - {data_name.replace('_', ' ').title()}", fontsize=14, fontweight="bold")
-    plt.xlabel("Date", fontsize=12)
-    plt.ylabel("Price", fontsize=12)
-    plt.legend(fontsize=10, loc="best")
-    plt.grid(True, alpha=0.3)
-
-    # 예측 그래프 저장 경로 results/figures/ 로 통일
+    # 10. 시각화
     Path("results/figures").mkdir(parents=True, exist_ok=True)
-    figure_save_path = f"results/figures/{data_name}_ai_extended_prediction.png"
-    plt.savefig(figure_save_path, bbox_inches="tight")
-    plt.close()
-    print(f"[예측 그래프 저장 완료] -> {figure_save_path}")
-    
+
+    # --- 모델별 RMSE 계산 (범례 표시용) ---
+    rmse_dict = {}
+    for model_name, y_pred in results.items():
+        rmse_val = np.sqrt(np.mean((y_test.values - y_pred) ** 2))
+        rmse_dict[model_name] = rmse_val
+
+    # ── 그래프 1: 예측값 비교 (5개 모델 + 실제값) ──────────────────────────
+    fig, ax = plt.subplots(figsize=(16, 7), dpi=120)
+
+    # 실제 종가 (굵은 검정)
+    ax.plot(test_dates, y_test.values,
+            label="Actual Close (실제 종가)",
+            color="black", linewidth=2.5, zorder=5)
+
+    # Naive 벤치마크: 전일 종가를 그대로 예측
+    ax.plot(test_dates, results["Benchmark"],
+            label=f"Naive Benchmark (전일 종가)  RMSE={rmse_dict['Benchmark']:,.0f}",
+            color="dimgray", linestyle=(0, (1, 1)), linewidth=1.8, alpha=0.85)
+
+    # ARIMA
+    ax.plot(test_dates, results["ARIMA"],
+            label=f"ARIMA Forecast              RMSE={rmse_dict['ARIMA']:,.0f}",
+            color="crimson", linestyle="-.", linewidth=1.6, alpha=0.85)
+
+    # Existing RF (7개 피처)
+    ax.plot(test_dates, results["Existing RF"],
+            label=f"Existing RF  (7 features)   RMSE={rmse_dict['Existing RF']:,.0f}",
+            color="darkorange", linestyle="--", linewidth=1.8, alpha=0.9)
+
+    # Extended RF (30+ 피처)
+    ax.plot(test_dates, results["Extended RF"],
+            label=f"Extended RF  (30+ features) RMSE={rmse_dict['Extended RF']:,.0f}",
+            color="royalblue", linestyle="-", linewidth=2.0, alpha=0.9)
+
+    # Extended ANN (30+ 피처)
+    ax.plot(test_dates, results["Extended ANN"],
+            label=f"Extended ANN (30+ features) RMSE={rmse_dict['Extended ANN']:,.0f}",
+            color="forestgreen", linestyle="-", linewidth=2.0, alpha=0.9)
+
+    ax.set_title(
+        f"Model Predictions Comparison — {data_name.replace('_', ' ').title()}",
+        fontsize=14, fontweight="bold", pad=14
+    )
+    ax.set_xlabel("Date", fontsize=12)
+    ax.set_ylabel("Price (KRW)", fontsize=12)
+    ax.legend(fontsize=9, loc="upper left",
+              framealpha=0.85, edgecolor="gray",
+              prop={"family": "monospace"})   # 고정폭 폰트 → 수치 정렬
+    ax.grid(True, alpha=0.3)
+    ax.tick_params(axis="x", rotation=30)
+
+    # 기준 설명 텍스트 박스
+    note_text = (
+        "[RMSE 개선율 기준]\n"
+        f"Existing RF 대비 Extended RF : "
+        f"{(rmse_dict['Existing RF']-rmse_dict['Extended RF'])/rmse_dict['Existing RF']*100:+.2f}%\n"
+        f"Naive 대비 Extended RF        : "
+        f"{(rmse_dict['Benchmark']-rmse_dict['Extended RF'])/rmse_dict['Benchmark']*100:+.2f}%"
+    )
+    ax.text(
+        0.99, 0.02, note_text,
+        transform=ax.transAxes,
+        fontsize=8, verticalalignment="bottom", horizontalalignment="right",
+        bbox=dict(boxstyle="round,pad=0.4", facecolor="lightyellow",
+                  edgecolor="gray", alpha=0.9)
+    )
+
+    fig.tight_layout()
+    pred_graph_path = f"results/figures/{data_name}_ai_extended_prediction.png"
+    fig.savefig(pred_graph_path, bbox_inches="tight")
+    plt.close(fig)
+    print(f"[예측 비교 그래프 저장 완료] -> {pred_graph_path}")
+
+    # ── 그래프 2: RMSE 막대 비교 (모델별 한눈에 비교) ─────────────────────
+    model_names = list(rmse_dict.keys())
+    rmse_values = list(rmse_dict.values())
+    bar_colors = ["dimgray", "dimgray", "darkorange", "royalblue", "forestgreen"]
+    hatches     = ["\\\\", "", "", "", ""]
+
+    fig2, ax2 = plt.subplots(figsize=(10, 5), dpi=120)
+    bars = ax2.bar(model_names, rmse_values,
+                   color=bar_colors, hatch=hatches,
+                   edgecolor="white", linewidth=0.8, alpha=0.88)
+
+    # 막대 위에 수치 표시
+    for bar, val in zip(bars, rmse_values):
+        ax2.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + max(rmse_values) * 0.01,
+            f"{val:,.0f}",
+            ha="center", va="bottom", fontsize=9, fontweight="bold"
+        )
+
+    # Naive 기준선
+    naive_rmse = rmse_dict["Benchmark"]
+    ax2.axhline(naive_rmse, color="dimgray", linestyle=":", linewidth=1.5,
+                label=f"Naive RMSE = {naive_rmse:,.0f}")
+
+    ax2.set_title(
+        f"RMSE Comparison by Model — {data_name.replace('_', ' ').title()}",
+        fontsize=13, fontweight="bold"
+    )
+    ax2.set_ylabel("RMSE (KRW)", fontsize=11)
+    ax2.set_xlabel("Model", fontsize=11)
+    ax2.legend(fontsize=9)
+    ax2.grid(True, axis="y", alpha=0.35)
+    ax2.set_xticks(range(len(model_names)))
+    ax2.set_xticklabels(model_names, rotation=15, ha="right", fontsize=9)
+    fig2.tight_layout()
+
+    rmse_bar_path = f"results/figures/{data_name}_rmse_comparison.png"
+    fig2.savefig(rmse_bar_path, bbox_inches="tight")
+    plt.close(fig2)
+    print(f"[RMSE 막대 비교 그래프 저장 완료] -> {rmse_bar_path}")
+
     return df_metrics
