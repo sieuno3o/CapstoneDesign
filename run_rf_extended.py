@@ -3,21 +3,19 @@ import pandas as pd
 from pathlib import Path
 from src.train_rf_extended import train_rf_extended_pipeline
 
+# ── 분석 대상 종목 (교수님 피드백: 해외 기업 제거, 국내 기업 집중) ─────────────
+# "기업을 너무 많이 할 필요 없어. 초점이 흐트러지니까." (2026.05.22 면담)
 stocks = {
+    # 국내 반도체
     "samsung_electronics": "data/rawdata/samsung_electronics_5y.csv",
-    "sk_hynix": "data/rawdata/sk_hynix_5y.csv",
-    "wonik_ips": "data/rawdata/wonik_ips_5y.csv",
-    "ia": "data/rawdata/ia_5y.csv",
-    "hanwha_aerospace": "data/rawdata/hanwha_aerospace_5y.csv",
-    "lig_nex1": "data/rawdata/lig_nex1_5y.csv",
-    "snt_dynamics": "data/rawdata/snt_dynamics_5y.csv",
-    "firstec": "data/rawdata/firstec_5y.csv",
-    "rtx": "data/rawdata/rtx_5y.csv",
-    "aerovironment": "data/rawdata/aerovironment_5y.csv",
-    "draganfly": "data/rawdata/draganfly_5y.csv",
-    "nvidia": "data/rawdata/nvidia_5y.csv",
-    "axt": "data/rawdata/axt_5y.csv",
-    "maxlinear": "data/rawdata/maxlinear_5y.csv",
+    "sk_hynix":            "data/rawdata/sk_hynix_5y.csv",
+    "wonik_ips":           "data/rawdata/wonik_ips_5y.csv",
+    "dongjin_semichem":    "data/rawdata/dongjin_semichem_5y.csv",
+    # 국내 방산
+    "hanwha_aerospace":    "data/rawdata/hanwha_aerospace_5y.csv",
+    "lig_nex1":            "data/rawdata/lig_nex1_5y.csv",
+    "snt_dynamics":        "data/rawdata/snt_dynamics_5y.csv",
+    "firstec":             "data/rawdata/firstec_5y.csv",
 }
 
 if __name__ == "__main__":
