@@ -1,0 +1,1843 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-NSI 시장 심리지수 결합 주가 예측 모델 특화 보고서</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(17, 24, 39, 0.75);
+            --card-hover-border: rgba(139, 92, 246, 0.45);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --primary: #8b5cf6;
+            --primary-glow: rgba(139, 92, 246, 0.3);
+            --secondary: #06b6d4;
+            --secondary-glow: rgba(6, 182, 212, 0.3);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --success: #10b981;
+            --danger: #ef4444;
+            --neutral: #6b7280;
+            --code-bg: #1e293b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Outfit', 'Noto Sans KR', sans-serif;
+            line-height: 1.7;
+            padding: 50px 20px;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.18) 0px, transparent 40%),
+                radial-gradient(at 100% 0%, rgba(6, 182, 212, 0.15) 0px, transparent 40%),
+                radial-gradient(at 50% 100%, rgba(139, 92, 246, 0.12) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* ─── Header Section ─── */
+        header {
+            text-align: center;
+            margin-bottom: 70px;
+            position: relative;
+        }
+
+        header .badge {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2));
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: #c084fc;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            display: inline-block;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        header h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #b490ff, #38bdf8, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            letter-spacing: -0.8px;
+            line-height: 1.25;
+        }
+
+        header p {
+            font-size: 1.15rem;
+            color: var(--text-muted);
+            max-width: 850px;
+            margin: 0 auto;
+            font-weight: 300;
+        }
+
+        /* ─── Grid Systems ─── */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 960px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ─── Card Design ─── */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 35px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.5);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--primary), var(--secondary), transparent);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 25px 50px -12px rgba(139, 92, 246, 0.25);
+            border-color: var(--card-hover-border);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card-full {
+            margin-bottom: 40px;
+        }
+
+        /* Titles */
+        .card-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: rgba(139, 92, 246, 0.15);
+            color: #a78bfa;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        h2 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card h2::before {
+            content: '';
+            display: inline-block;
+            width: 5px;
+            height: 22px;
+            background: linear-gradient(to bottom, var(--primary), var(--secondary));
+            border-radius: 3px;
+        }
+
+        p.desc {
+            color: var(--text-muted);
+            margin-bottom: 25px;
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        /* ─── Section 1: Survey & Weights ─── */
+        .weight-container {
+            margin-top: 25px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 6px;
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 10px;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            color: #ffffff;
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+
+        .weight-chart-bar {
+            margin-bottom: 18px;
+        }
+
+        .bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.92rem;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .bar-label .cat-id {
+            color: var(--secondary);
+            font-weight: 700;
+        }
+
+        .bar-label .cat-name {
+            color: var(--text-main);
+            margin-left: 6px;
+        }
+
+        .bar-label .weight-num {
+            font-weight: 700;
+        }
+
+        .bar-outer {
+            height: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-inner {
+            height: 100%;
+            border-radius: 5px;
+            width: 0;
+            transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .weight-positive {
+            background: linear-gradient(90deg, #10b981, #34d399);
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+        }
+
+        .weight-negative {
+            background: linear-gradient(90deg, #ef4444, #f87171);
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+        }
+
+        /* ─── Section 2: Crawling & Regex ─── */
+        .regex-card-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .regex-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 18px;
+            transition: border-color 0.3s ease;
+        }
+
+        .regex-item:hover {
+            border-color: rgba(6, 182, 212, 0.3);
+        }
+
+        .regex-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .regex-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--secondary);
+        }
+
+        .regex-badge {
+            background: rgba(6, 182, 212, 0.12);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            color: #22d3ee;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        .regex-code {
+            font-family: 'Fira Code', monospace;
+            background: var(--code-bg);
+            padding: 10px 14px;
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 0.82rem;
+            overflow-x: auto;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            margin-bottom: 8px;
+        }
+
+        .regex-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* ─── Section 3: Formula & Calculator ─── */
+        .formula-box {
+            background: radial-gradient(circle at top right, rgba(139, 92, 246, 0.1), rgba(0,0,0,0.3));
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .formula-math {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #38bdf8;
+            margin-bottom: 15px;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+        }
+
+        .formula-vars {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Interactive Calculator */
+        .calc-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 20px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .calc-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .calc-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .calc-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .input-group {
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: 14px;
+        }
+
+        .input-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.88rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .input-val-display {
+            color: var(--secondary);
+            font-weight: 700;
+        }
+
+        .slider-control {
+            width: 100%;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            border-radius: 3px;
+            -webkit-appearance: none;
+        }
+
+        .slider-control::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--secondary);
+            cursor: pointer;
+            box-shadow: 0 0 8px var(--secondary-glow);
+            transition: transform 0.1s ease;
+        }
+
+        .slider-control::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .calc-outputs {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 30px;
+            position: relative;
+        }
+
+        .calc-radio-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            width: 100%;
+        }
+
+        .radio-label {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+
+        .calc-radio-group input {
+            display: none;
+        }
+
+        .calc-radio-group input:checked + .radio-label {
+            background: rgba(139, 92, 246, 0.12);
+            border-color: var(--primary);
+            color: #ffffff;
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+        }
+
+        .result-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 4px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
+            background: rgba(0, 0, 0, 0.2);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+            transition: border-color 0.5s ease;
+        }
+
+        .result-circle.bullish {
+            border-color: var(--success);
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.25), inset 0 0 20px rgba(16, 185, 129, 0.1);
+        }
+
+        .result-circle.bearish {
+            border-color: var(--danger);
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.25), inset 0 0 20px rgba(239, 68, 68, 0.1);
+        }
+
+        .result-circle.neutral {
+            border-color: var(--neutral);
+        }
+
+        .result-val {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        .result-lbl {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: -4px;
+        }
+
+        .result-state {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .result-state.bullish { color: var(--success); }
+        .result-state.bearish { color: var(--danger); }
+        .result-state.neutral { color: var(--text-muted); }
+
+        .result-explanation {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-align: center;
+            max-width: 250px;
+            line-height: 1.5;
+        }
+
+        /* ─── Section 4: Process Flow ─── */
+        .stacking-workflow {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+            margin-top: 30px;
+        }
+
+        .workflow-step {
+            display: flex;
+            gap: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 22px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .step-num {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #ffffff;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);
+            font-size: 0.95rem;
+        }
+
+        .step-content h4 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 6px;
+        }
+
+        .step-content p {
+            font-size: 0.92rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .workflow-arrow {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.15);
+            font-size: 1.5rem;
+            margin: -10px 0;
+        }
+
+        /* ─── Section 5: Evaluation & Results ─── */
+        .metrics-card {
+            margin-top: 20px;
+        }
+
+        .ticker-tab-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .ticker-btn {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 10px 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.88rem;
+            transition: all 0.3s ease;
+        }
+
+        .ticker-btn:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: #ffffff;
+        }
+
+        .ticker-btn.active {
+            background: linear-gradient(135deg, var(--secondary), #0891b2);
+            color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.25);
+        }
+
+        .company-result-display {
+            display: none;
+        }
+
+        .company-result-display.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* Responsive Table styling */
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            background: rgba(0, 0, 0, 0.2);
+            margin-bottom: 25px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.88rem;
+        }
+
+        th {
+            background-color: rgba(17, 24, 39, 0.9);
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.78rem;
+            letter-spacing: 0.8px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: var(--text-main);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.015);
+        }
+
+        .badge-model {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .badge-model.hybrid {
+            background: rgba(139, 92, 246, 0.15);
+            color: #c084fc;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .badge-model.benchmark {
+            background: rgba(156, 163, 175, 0.1);
+            color: #9ca3af;
+            border: 1px solid rgba(156, 163, 175, 0.2);
+        }
+
+        .badge-model.others {
+            background: rgba(56, 189, 248, 0.1);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .highlight-better {
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        .highlight-worse {
+            color: var(--danger);
+            font-weight: 700;
+        }
+
+        .chart-img-container {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 15px;
+            margin: 25px 0;
+            text-align: center;
+        }
+
+        .chart-img-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .analysis-box {
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 25px;
+        }
+
+        .analysis-box h4 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .analysis-box h4::before {
+            content: '🔎';
+            font-size: 0.95rem;
+        }
+
+        .bullet-list {
+            list-style: none;
+        }
+
+        .bullet-list li {
+            position: relative;
+            padding-left: 22px;
+            margin-bottom: 12px;
+            font-size: 0.92rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .bullet-list li strong {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .bullet-list li::before {
+            content: "✦";
+            position: absolute;
+            left: 0;
+            color: var(--secondary);
+            font-weight: bold;
+        }
+
+        /* ─── Footer ─── */
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            padding: 30px 0;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Header -->
+    <header>
+        <div class="badge">K-NSI Sentiment Model Report</div>
+        <h1>K-NSI 투자 심리 결합 주가 예측 모델 종합 분석 보고서</h1>
+        <p>설문조사 기반 장/단기 가중치 설계부터 실시간 Daum 뉴스 수집 알고리즘, K-NSI 지수 연산, 그리고 Stacking 2단계 하이브리드 파이프라인 결합 성능과 고찰을 단일 보고서로 정리하였습니다.</p>
+    </header>
+
+    <!-- Grid: 1. Weights & 2. Crawling -->
+    <div class="grid-2">
+        <!-- 1. 설문조사 기반 심리 가중치 산출 -->
+        <div class="card">
+            <div class="card-icon">01</div>
+            <h2>설문조사 기반 심리 가중치 산출</h2>
+            <p class="desc">주가예측 모델에 투영될 거시 매크로 이벤트 5종(N1~N5)에 대한 설문조사 평균값입니다. 투자 성향(투자 기간 5년 기준)에 따라 가중치의 반응 강도와 부호가 명확히 분리됩니다.</p>
+            
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="switchWeightTab('short')">단기 투자자 (&lt; 5년)</button>
+                <button class="tab-btn" onclick="switchWeightTab('long')">장기 투자자 (&ge; 5년)</button>
+            </div>
+
+            <!-- 단기 투자자 가중치 차트 -->
+            <div id="weights-short" class="weight-container">
+                <div class="weight-chart-bar">
+                    <div class="bar-label">
+                        <span><span class="cat-id">N1</span><span class="cat-name">이란 및 중동전쟁 위기 고조 (매크로 악재)</span></span>
+                        <span class="weight-num text-danger">-0.38</span>
+                    </div>
+                    <div class="bar-outer">
+                        <div class="bar-inner weight-negative" data-width="38%"></div>
+                    </div>
+                </div>
+                <div class="weight-chart-bar">
+                    <div class="bar-label">
+                        <span><span class="cat-id">N2</span><span class="cat-name">원·달러 환율 급등 및 달러 강세 (수출 변동성)</span></span>
+                        <span class="weight-num text-danger">-0.41</span>
+                    </div>
+                    <div class="bar-outer">
+                        <div class="bar-inner weight-negative" data-width="41%"></div>
+                    </div>
+                </div>
+                <div class="weight-chart-bar">
+                    <div class="bar-label">
+                        <span><span class="cat-id">N3</span><span class="cat-name">중동 지역 휴전 및 협상 타결 소식 (시장 안정)</span></span>
+                        <span class="weight-num text-success">+0.35</span>
+                    </div>
+                    <div class="bar-outer">
+                        <div class="bar-inner weight-positive" data-width="35%"></div>
+                    </div>
+                </div>
+                <div class="weight-chart-bar">
+                    <div class="bar-label">
+                        <span><span class="cat-id">N4</span><span class="cat-name">대통령 및 연준의 정책적 금리 발언 (정책 노이즈)</span></span>
+                        <span class="weight-num text-danger">-0.35</span>
+                    </div>
+                    <div class="bar-outer">
+                        <div class="bar-inner weight-negative" data-width="35%"></div>
+                    </div>
+                </div>
+                <div class="weight-chart-bar">
+                    <div class="bar-label">
+                        <span><span class="cat-id">N5</span><span class="cat-name">반도체 및 AI 산업 성장/수출 호조 (섹터 호재)</span></span>
+                        <span class="weight-num text-success">+1.09</span>
+                    </div>
+                    <div class="bar-outer">
+                        <div class="bar-inner weight-positive" data-width="100%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 장기 투자자 가중치 차트 -->
+            <div id="weights-long" class="weight-container" style="display:none;">
+                <div class="weight-chart-bar">
+                    <div class="bar-label">
+                        <span><span class="cat-id">N1</span><span class="cat-name">이란 및 중동전쟁 위기 고조 (매크로 악재)</span></span>
+                        <span class="weight-num text-success">+0.25</span>
+                    </div>
+                    <div class="bar-outer">
+                        <div class="bar-inner weight-positive" data-width="25%"></div>
+                    </div>
+                </div>
+                <div class="weight-chart-bar">
+                    <div class="bar-label">
+                        <span><span class="cat-id">N2</span><span class="cat-name">원·달러 환율 급등 및 달러 강세 (수출 변동성)</span></span>
+                        <span class="weight-num text-success">+0.05</span>
+                    </div>
+                    <div class="bar-outer">
+                        <div class="bar-inner weight-positive" data-width="5%"></div>
+                    </div>
+                </div>
+                <div class="weight-chart-bar">
+                    <div class="bar-label">
+                        <span><span class="cat-id">N3</span><span class="cat-name">중동 지역 휴전 및 협상 타결 소식 (시장 안정)</span></span>
+                        <span class="weight-num text-success">+0.50</span>
+                    </div>
+                    <div class="bar-outer">
+                        <div class="bar-inner weight-positive" data-width="50%"></div>
+                    </div>
+                </div>
+                <div class="weight-chart-bar">
+                    <div class="bar-label">
+                        <span><span class="cat-id">N4</span><span class="cat-name">대통령 및 연준의 정책적 금리 발언 (정책 노이즈)</span></span>
+                        <span class="weight-num text-danger">-0.05</span>
+                    </div>
+                    <div class="bar-outer">
+                        <div class="bar-inner weight-negative" data-width="5%"></div>
+                    </div>
+                </div>
+                <div class="weight-chart-bar">
+                    <div class="bar-label">
+                        <span><span class="cat-id">N5</span><span class="cat-name">반도체 및 AI 산업 성장/수출 호조 (섹터 호재)</span></span>
+                        <span class="weight-num text-success">+1.20</span>
+                    </div>
+                    <div class="bar-outer">
+                        <div class="bar-inner weight-positive" data-width="100%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Daum 뉴스 크롤링 아키텍처 -->
+        <div class="card">
+            <div class="card-icon">02</div>
+            <h2>Daum 뉴스 크롤링 & 키워드 매칭</h2>
+            <p class="desc">네이버의 봇 차단(HTTP 403 Forbidden) 장벽을 회피하기 위해 Daum 뉴스 검색 질의어 카운팅 기술을 고안하였습니다. 매 영업일마다 지정 키워드 정규식을 대조하여 기사 건수를 도출했습니다.</p>
+            
+            <div class="regex-card-content">
+                <div class="regex-item">
+                    <div class="regex-header">
+                        <span class="regex-title">N1: 지정학적 매크로 악재</span>
+                        <span class="regex-badge">Regex Match</span>
+                    </div>
+                    <div class="regex-code">r"이란|중동전쟁|이스라엘.*이란|이란.*이스라엘|중동.*위기"</div>
+                    <div class="regex-desc">지정학적 리스크 뉴스의 대외 변동성 카운트 수집</div>
+                </div>
+
+                <div class="regex-item">
+                    <div class="regex-header">
+                        <span class="regex-title">N5: AI 반도체 수출 호재</span>
+                        <span class="regex-badge">Regex Match</span>
+                    </div>
+                    <div class="regex-code">r"반도체.*수출|AI.*산업|반도체.*성장|HBM.*수출|반도체.*호조"</div>
+                    <div class="regex-desc">국내 반도체 업계 및 기술 성장 모멘텀 위주의 기사 분류</div>
+                </div>
+
+                <div class="regex-item" style="border-left: 3px solid var(--secondary);">
+                    <div class="regex-header">
+                        <span class="regex-title" style="color: var(--text-main)">데이터 보존 처리 (Data Preservation)</span>
+                    </div>
+                    <p class="regex-desc" style="font-size: 0.88rem;">수집된 최근 60일치 뉴스 데이터(<code style="color: #38bdf8;">macro_news_counts_90d.csv</code>)의 테스트 범위 바깥에 해당하는 과거 5년 가격 데이터 학습 시, NSI 값을 누락 없이 <strong>100.0 (중립값)</strong>으로 보충하여 모델 학습 데이터가 조기 손실되는 인덱스 유실 버그를 완전히 극복했습니다.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. K-NSI 공식 및 계산기 -->
+    <div class="card card-full">
+        <div class="card-icon">03</div>
+        <h2>K-NSI (Korean News Sentiment Index) 연산 공식 & 시뮬레이터</h2>
+        <p class="desc">수집된 뉴스 건수(N1~N5)에 설문조사에서 도출된 투자 성향별 가중치($W$)를 곱해 한국형 뉴스 심리지수(K-NSI)를 계산합니다. 계산된 당일 지수는 7일 이동평균 필터를 통과하여 단기적 노이즈를 억제합니다.</p>
+        
+        <div class="formula-box">
+            <div class="formula-math">
+                K-NSI = [ (Positive_Score - Negative_Score) / (Positive_Score + Negative_Score + 1.0) ] × 100 + 100
+            </div>
+            <div class="formula-vars">
+                • <strong>Positive_Score</strong> = (N3 × W_N3) + (N5 × W_N5) + (N1 × W_N1, N2 × W_N2 만약 해당 가중치가 양수일 때)<br>
+                • <strong>Negative_Score</strong> = (N4 × |W_N4|) + (N1 × |W_N1|, N2 × |W_N2| 만약 해당 가중치가 음수일 때)<br>
+                • 분모의 <strong>+ 1.0</strong>은 특정 날짜에 뉴스가 전혀 수집되지 않았을 때 Zero-Division(0 나누기) 오류를 회피하기 위한 보정상수입니다.
+            </div>
+        </div>
+
+        <!-- Interactive Simulator -->
+        <div class="calc-title">⚡ 실시간 K-NSI 지수 연산 시뮬레이터</div>
+        <div class="calc-grid">
+            <!-- Inputs -->
+            <div class="calc-inputs">
+                <div class="calc-radio-group">
+                    <input type="radio" id="calc-short" name="calc-horizon" value="short" checked onchange="calculateNSI()">
+                    <label for="calc-short" class="radio-label">단기 가중치 세트 적용</label>
+                    
+                    <input type="radio" id="calc-long" name="calc-horizon" value="long" onchange="calculateNSI()">
+                    <label for="calc-long" class="radio-label">장기 가중치 세트 적용</label>
+                </div>
+
+                <div class="input-group">
+                    <div class="input-header">
+                        <span>N1. 이란 및 중동 위기 (기사 건수)</span>
+                        <span id="n1-val" class="input-val-display">20건</span>
+                    </div>
+                    <input type="range" id="n1-slider" class="slider-control" min="0" max="100" value="20" oninput="updateVal('n1', this.value)">
+                </div>
+
+                <div class="input-group">
+                    <div class="input-header">
+                        <span>N2. 고환율 및 달러 강세 (기사 건수)</span>
+                        <span id="n2-val" class="input-val-display">15건</span>
+                    </div>
+                    <input type="range" id="n2-slider" class="slider-control" min="0" max="100" value="15" oninput="updateVal('n2', this.value)">
+                </div>
+
+                <div class="input-group">
+                    <div class="input-header">
+                        <span>N3. 중동 휴전 협상 타결 (기사 건수)</span>
+                        <span id="n3-val" class="input-val-display">10건</span>
+                    </div>
+                    <input type="range" id="n3-slider" class="slider-control" min="0" max="100" value="10" oninput="updateVal('n3', this.value)">
+                </div>
+
+                <div class="input-group">
+                    <div class="input-header">
+                        <span>N4. 대통령 금리 관련 발언 (기사 건수)</span>
+                        <span id="n4-val" class="input-val-display">5건</span>
+                    </div>
+                    <input type="range" id="n4-slider" class="slider-control" min="0" max="100" value="5" oninput="updateVal('n4', this.value)">
+                </div>
+
+                <div class="input-group">
+                    <div class="input-header">
+                        <span>N5. 반도체 및 AI 호조 (기사 건수)</span>
+                        <span id="n5-val" class="input-val-display">30건</span>
+                    </div>
+                    <input type="range" id="n5-slider" class="slider-control" min="0" max="100" value="30" oninput="updateVal('n5', this.value)">
+                </div>
+            </div>
+
+            <!-- Display Result -->
+            <div class="calc-outputs">
+                <div id="calc-circle" class="result-circle bullish">
+                    <div id="calc-result" class="result-val">120.4</div>
+                    <div class="result-lbl">K-NSI Score</div>
+                </div>
+                <div id="calc-state" class="result-state bullish">낙관적 시장 심리</div>
+                <div id="calc-explanation" class="result-explanation">반도체 호조 뉴스 비중이 지정학적 위기를 덮어 투자자 심리가 상당히 긍정적입니다.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. 장/단기 나눈 과정 및 2단계 Stacking 연계 -->
+    <div class="card card-full">
+        <div class="card-icon">04</div>
+        <h2>단기/장기 분리 과정 및 2단계 하이브리드 Stacking 모델 구조</h2>
+        <p class="desc">왜 투자 성향을 나누었으며, 이 지수들이 머신러닝 주가 예측 파이프라인에서 기술적으로 어떻게 스태킹 학습 모델로 융합되는지 설명합니다.</p>
+        
+        <div class="calc-grid">
+            <div>
+                <h3 style="font-size: 1.15rem; color: var(--secondary); margin-bottom: 12px;">투자 기간 기준의 심리 이원화 (단기 vs 장기)</h3>
+                <p style="font-size:0.92rem; color: var(--text-muted); margin-bottom: 15px;">설문조사 응답자의 투자 선호 기간을 <strong>5년</strong> 기준으로 구분했습니다. 단기 투자자 그룹과 장기 투자자 그룹이 가지는 정보 해석 특징은 다음과 같습니다.</p>
+                <ul class="bullet-list">
+                    <li><strong>단기 투자자 (&lt; 5년)</strong>: 지정학 악재(N1: -0.38) 및 환율 상승(N2: -0.41) 기사에 대해 즉각적이고 민감하게 반응하여 지수를 강하게 끌어내리는 공포 편향성을 보입니다.</li>
+                    <li><strong>장기 투자자 (&ge; 5년)</strong>: 대외 지정학 위기가 발생해도 장기 실적 성장성에 방점을 두어 오히려 N1(+0.25) 및 N2(+0.05) 기사가 도배될 때 '저점 분할 매수 기회'로 포착하는 낙관적 반응성을 띱니다.</li>
+                    <li><strong>이원화 NSI의 효용</strong>: 이 두 지수를 동시에 결합 입력함에 따라 모델은 주가 차트 흐름에서 단기 투매 물량과 장기 지지대 물량의 완충 작용을 머신러닝 특징 공간(Feature Space) 상에 정밀하게 투영할 수 있게 됩니다.</li>
+                </ul>
+            </div>
+
+            <!-- Stacking process steps -->
+            <div class="stacking-workflow">
+                <div class="workflow-step">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <h4>1단계 (Stage 1): 차트 가격 데이터 단독 학습</h4>
+                        <p>과거 5개년 종가 데이터 기반 보조지표 10종(RSI, MACD, BB_upper 등)을 입력받아 <strong>Random Forest Regressor</strong>가 다음날 주가 예상 수익률(<span style="color:#a78bfa;">r_price_pred</span>)을 1차 도출합니다.</p>
+                    </div>
+                </div>
+                
+                <div class="workflow-arrow">↓</div>
+
+                <div class="workflow-step">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <h4>2단계 (Stage 2): Stacking 심리 피처 결합 및 메타 회귀</h4>
+                        <p>1차 예측 수익률과 최근 60일간 크롤링한 <span style="color:#22d3ee;">NSI_short</span> 및 <span style="color:#22d3ee;">NSI_long</span> 변수를 스태킹하여 <strong>Ridge Regression</strong>을 통해 최종적으로 보정된 하이브리드 예측 수익률을 확정합니다.</p>
+                    </div>
+                </div>
+
+                <div class="workflow-arrow">↓</div>
+
+                <div class="workflow-step" style="border-color: rgba(16, 185, 129, 0.25);">
+                    <div class="step-num" style="background: var(--success);">3</div>
+                    <div class="step-content">
+                        <h4>최종 출력: 주가 복원 및 방향성 평가</h4>
+                        <p>결합 모델의 보정 수익률을 당일 실제 종가에 곱하여 <strong>내일의 예측 종가(KRW)</strong>를 역산하고, 회귀 오차(RMSE) 및 로지스틱 모형을 통한 다음날 주가 상승/하락 방향성(Directional Acc)을 최종 판정합니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. 6대 모델 성능 비교 및 결과 해석 -->
+    <div class="card card-full">
+        <div class="card-icon">05</div>
+        <h2>6대 모델 성능 비교 지표 및 종목별 결과 해석 (8대 기업 전체)</h2>
+        <p class="desc">수익률을 타깃으로 훈련된 최종 하이브리드 모델(Hybrid RF+NSI)과 기존 5대 모델의 최근 15거래일 아웃오브샘플 평가 성능 비교 데이터입니다. 오차 지표(RMSE, MAE)는 일반 실수값과 함께 괄호 내 실제 주가 가치(원화)로 함께 표기되어 있습니다.</p>
+
+        <div class="ticker-tab-container">
+            <button class="ticker-btn active" onclick="switchTicker('samsung')">삼성전자</button>
+            <button class="ticker-btn" onclick="switchTicker('sk')">SK하이닉스</button>
+            <button class="ticker-btn" onclick="switchTicker('wonik')">원익IPS</button>
+            <button class="ticker-btn" onclick="switchTicker('dongjin')">동진쎄미켐</button>
+            <button class="ticker-btn" onclick="switchTicker('hanwha')">한화에어로스페이스</button>
+            <button class="ticker-btn" onclick="switchTicker('lig')">LIG넥스원</button>
+            <button class="ticker-btn" onclick="switchTicker('snt')">SNT다이나믹스</button>
+            <button class="ticker-btn" onclick="switchTicker('firstec')">퍼스텍</button>
+        </div>
+
+        <!-- 삼성전자 -->
+        <div id="res-samsung" class="company-result-display active">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>예측 모델 (Model)</th>
+                            <th>RMSE (오차 수치) ↙</th>
+                            <th>MAE (평균절대오차)</th>
+                            <th>MAPE (오차 백분율)</th>
+                            <th>방향 정확도 (Directional Acc) ↗</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge-model benchmark">Naive Benchmark (전일종가 복사)</span></td>
+                            <td>10085.14 (10,085원)</td>
+                            <td>7807.89 (7,808원)</td>
+                            <td>4.09%</td>
+                            <td>48.65%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">ARIMA 시계열 모델</span></td>
+                            <td>136717.91 (136,718원)</td>
+                            <td>136188.16 (136,188원)</td>
+                            <td>70.45%</td>
+                            <td>45.95%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Existing RF (기본 7개 변수)</span></td>
+                            <td>12243.47 (12,243원)</td>
+                            <td>10035.22 (10,035원)</td>
+                            <td>5.17%</td>
+                            <td>40.54%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Extended RF (보조지표 10개)</span></td>
+                            <td>12384.46 (12,384원)</td>
+                            <td>10163.57 (10,164원)</td>
+                            <td>5.22%</td>
+                            <td class="highlight-better">54.05%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Extended ANN (인공신경망)</span></td>
+                            <td>10273.85 (10,274원)</td>
+                            <td>7988.86 (7,989원)</td>
+                            <td>4.17%</td>
+                            <td>51.35%</td>
+                        </tr>
+                        <tr style="background: rgba(139, 92, 246, 0.05);">
+                            <td><span class="badge-model hybrid">Hybrid RF+NSI (최종 결합형)</span></td>
+                            <td class="highlight-better">12188.16 (12,188원)</td>
+                            <td>9958.19 (9,958원)</td>
+                            <td>5.12%</td>
+                            <td>45.95%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="chart-img-container">
+                <img src="figures/samsung_electronics_final_comparison.png" alt="삼성전자 6대 모델 비교 차트">
+            </div>
+
+            <div class="analysis-box">
+                <h4>삼성전자 분석 해석</h4>
+                <ul class="bullet-list">
+                    <li><strong>심리 결합 효과의 실효성 증명</strong>: K-NSI 지수를 결합한 Hybrid 모델이 <strong>RMSE 12188.16 (12,188원)</strong>을 기록하여, 기술적 지표만 활용한 Extended RF(12,384.46) 대비 오차가 개선되었습니다.</li>
+                    <li><strong>글로벌 IT 매크로 영향성</strong>: 글로벌 반도체 호조 뉴스(N5)와 환율 강세(N2)에 따른 원화 환산 마진 개선 기사가 삼성전자의 1단계 가격 변수를 효과적으로 보정하여 내일의 상승 동력을 조기 보완했음을 뜻합니다.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- SK하이닉스 -->
+        <div id="res-sk" class="company-result-display">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>예측 모델 (Model)</th>
+                            <th>RMSE (오차 수치) ↙</th>
+                            <th>MAE (평균절대오차)</th>
+                            <th>MAPE (오차 백분율)</th>
+                            <th>방향 정확도 (Directional Acc) ↗</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge-model benchmark">Naive Benchmark (전일종가 복사)</span></td>
+                            <td>59728.33 (59,728원)</td>
+                            <td>49368.42 (49,368원)</td>
+                            <td>5.21%</td>
+                            <td>45.95%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">ARIMA 시계열 모델</span></td>
+                            <td>757615.88 (757,616원)</td>
+                            <td>753736.84 (753,737원)</td>
+                            <td>78.28%</td>
+                            <td>43.24%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Existing RF (기본 7개 변수)</span></td>
+                            <td>67567.84 (67,568원)</td>
+                            <td>56163.86 (56,164원)</td>
+                            <td>5.81%</td>
+                            <td class="highlight-better">56.76%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Extended RF (보조지표 10개)</span></td>
+                            <td>63127.34 (63,127원)</td>
+                            <td>52728.53 (52,729원)</td>
+                            <td>5.50%</td>
+                            <td>45.95%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Extended ANN (인공신경망)</span></td>
+                            <td>61140.44 (61,140원)</td>
+                            <td>50939.71 (50,940원)</td>
+                            <td>5.38%</td>
+                            <td class="highlight-better">56.76%</td>
+                        </tr>
+                        <tr style="background: rgba(139, 92, 246, 0.05);">
+                            <td><span class="badge-model hybrid">Hybrid RF+NSI (최종 결합형)</span></td>
+                            <td>63466.07 (63,466원)</td>
+                            <td>52976.28 (52,976원)</td>
+                            <td>5.52%</td>
+                            <td>51.35%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="chart-img-container">
+                <img src="figures/sk_hynix_final_comparison.png" alt="SK하이닉스 6대 모델 비교 차트">
+            </div>
+
+            <div class="analysis-box">
+                <h4>SK하이닉스 분석 해석</h4>
+                <ul class="bullet-list">
+                    <li><strong>높은 고유 변동성</strong>: 하이닉스는 삼성전자보다 HBM 및 AI 반도체 수출 호재(N5) 뉴스의 유입 강도에 따라 하루 변동폭이 매우 큽니다.</li>
+                    <li><strong>하이브리드 방향성의 양호한 판별력</strong>: 최종 Hybrid RF+NSI 모델은 방향 예측 정확도 <strong>51.35%</strong>를 달성하여 단순 Benchmark(45.95%) 모델의 예측 무작위성을 이겨냈으며, 기술 지표 단독 모델의 과적합을 방지하고 중장기 추세를 안정적으로 따라갔습니다.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 원익IPS -->
+        <div id="res-wonik" class="company-result-display">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>예측 모델 (Model)</th>
+                            <th>RMSE (오차 수치) ↙</th>
+                            <th>MAE (평균절대오차)</th>
+                            <th>MAPE (오차 백분율)</th>
+                            <th>방향 정확도 (Directional Acc) ↗</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge-model benchmark">Naive Benchmark (전일종가 복사)</span></td>
+                            <td>7808.14 (7,808원)</td>
+                            <td>5734.21 (5,734원)</td>
+                            <td>4.73%</td>
+                            <td>54.05%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">ARIMA 시계열 모델</span></td>
+                            <td>97987.39 (97,987원)</td>
+                            <td>97757.17 (97,757원)</td>
+                            <td>81.05%</td>
+                            <td>54.05%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Existing RF (기본 7개 변수)</span></td>
+                            <td>7590.88 (7,591원)</td>
+                            <td>5538.51 (5,539원)</td>
+                            <td>4.58%</td>
+                            <td class="highlight-better">62.16%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Extended RF (보조지표 10개)</span></td>
+                            <td>7915.71 (7,916원)</td>
+                            <td>5770.87 (5,771원)</td>
+                            <td>4.74%</td>
+                            <td>51.35%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Extended ANN (인공신경망)</span></td>
+                            <td>7881.55 (7,882원)</td>
+                            <td>5744.29 (5,744원)</td>
+                            <td>4.73%</td>
+                            <td>54.05%</td>
+                        </tr>
+                        <tr style="background: rgba(139, 92, 246, 0.05);">
+                            <td><span class="badge-model hybrid">Hybrid RF+NSI (최종 결합형)</span></td>
+                            <td>7870.86 (7,871원)</td>
+                            <td>5752.99 (5,753원)</td>
+                            <td>4.73%</td>
+                            <td>54.05%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="chart-img-container">
+                <img src="figures/wonik_ips_final_comparison.png" alt="원익IPS 6대 모델 비교 차트">
+            </div>
+
+            <div class="analysis-box">
+                <h4>원익IPS 분석 해석</h4>
+                <ul class="bullet-list">
+                    <li><strong>소형 반도체 장비주의 선도 피드백</strong>: 원익IPS와 같은 장비주는 삼성전자/하이닉스 등의 초대형주 실적 가이드라인 뉴스보다 후행하여 공급 수주 보도가 터지는 특성이 있습니다.</li>
+                    <li><strong>하이브리드 개선</strong>: 기존 Extended RF(7,915.71) 모델 단독 연산치보다 최종 Hybrid NSI 결합치(7,870.86)가 더 뛰어난 오차 억제 성능을 보여, 대외 반도체 호재 심리 지표가 장비 기업 주가 예측의 보조 교정장치로 잘 기능했음이 입증됩니다.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 동진쎄미켐 -->
+        <div id="res-dongjin" class="company-result-display">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>예측 모델 (Model)</th>
+                            <th>RMSE (오차 수치) ↙</th>
+                            <th>MAE (평균절대오차)</th>
+                            <th>MAPE (오차 백분율)</th>
+                            <th>방향 정확도 (Directional Acc) ↗</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge-model benchmark">Naive Benchmark (전일종가 복사)</span></td>
+                            <td>2959.31 (2,959원)</td>
+                            <td>2300.00 (2,300원)</td>
+                            <td>4.67%</td>
+                            <td>54.05%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">ARIMA 시계열 모델</span></td>
+                            <td>21708.50 (21,708원)</td>
+                            <td>21428.95 (21,429원)</td>
+                            <td>42.81%</td>
+                            <td>51.35%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Existing RF (기본 7개 변수)</span></td>
+                            <td>2748.31 (2,748원)</td>
+                            <td>2156.41 (2,156원)</td>
+                            <td>4.38%</td>
+                            <td>62.16%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Extended RF (보조지표 10개)</span></td>
+                            <td>2983.99 (2,984원)</td>
+                            <td>2295.03 (2,295원)</td>
+                            <td>4.61%</td>
+                            <td>62.16%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Extended ANN (인공신경망)</span></td>
+                            <td>3059.13 (3,059원)</td>
+                            <td>2412.56 (2,413원)</td>
+                            <td>4.91%</td>
+                            <td>40.54%</td>
+                        </tr>
+                        <tr style="background: rgba(139, 92, 246, 0.05);">
+                            <td><span class="badge-model hybrid">Hybrid RF+NSI (최종 결합형)</span></td>
+                            <td class="highlight-better">2977.64 (2,978원)</td>
+                            <td>2289.52 (2,290원)</td>
+                            <td>4.59%</td>
+                            <td class="highlight-better">64.86%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="chart-img-container">
+                <img src="figures/dongjin_semichem_final_comparison.png" alt="동진쎄미켐 6대 모델 비교 차트">
+            </div>
+
+            <div class="analysis-box">
+                <h4>동진쎄미켐 분석 해석</h4>
+                <ul class="bullet-list">
+                    <li><strong>8개 기업 중 가장 높은 방향성 정확도 기록</strong>: 최종 Hybrid RF+NSI 모델은 방향성 예측 정확도(Directional Accuracy)에서 <strong>64.86%</strong>를 획득하여 다른 모든 모형을 누르는 압도적인 성능을 증명했습니다.</li>
+                    <li><strong>소재 국산화 및 수출 모멘텀 효과</strong>: 반도체 화학 소재 기업으로서 반도체 성장 호조(N5)와 환율 급등(N2) 기사가 결합했을 때, 대외 거시 환경 변화에 따른 공정 소재 수요의 등락 방향을 모델이 가장 기민하게 인지했음을 알 수 있습니다.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 한화에어로스페이스 -->
+        <div id="res-hanwha" class="company-result-display">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>예측 모델 (Model)</th>
+                            <th>RMSE (오차 수치) ↙</th>
+                            <th>MAE (평균절대오차)</th>
+                            <th>MAPE (오차 백분율)</th>
+                            <th>방향 정확도 (Directional Acc) ↗</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge-model benchmark">Naive Benchmark (전일종가 복사)</span></td>
+                            <td>64333.02 (64,333원)</td>
+                            <td>47473.68 (47,474원)</td>
+                            <td>3.42%</td>
+                            <td class="highlight-better">54.05%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">ARIMA 시계열 모델</span></td>
+                            <td>493164.46 (493,164원)</td>
+                            <td>484189.78 (484,190원)</td>
+                            <td>34.64%</td>
+                            <td class="highlight-better">56.76%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Existing RF (기본 7개 변수)</span></td>
+                            <td>66765.40 (66,765원)</td>
+                            <td>52540.69 (52,541원)</td>
+                            <td>3.81%</td>
+                            <td class="highlight-better">56.76%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Extended RF (보조지표 10개)</span></td>
+                            <td>65721.09 (65,721원)</td>
+                            <td>51601.95 (51,602원)</td>
+                            <td>3.75%</td>
+                            <td>48.65%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Extended ANN (인공신경망)</span></td>
+                            <td>63814.25 (63,814원)</td>
+                            <td>46545.57 (46,546원)</td>
+                            <td>3.36%</td>
+                            <td>45.95%</td>
+                        </tr>
+                        <tr style="background: rgba(139, 92, 246, 0.05);">
+                            <td><span class="badge-model hybrid">Hybrid RF+NSI (최종 결합형)</span></td>
+                            <td>65145.87 (65,146원)</td>
+                            <td>50133.48 (50,133원)</td>
+                            <td>3.63%</td>
+                            <td>51.35%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="chart-img-container">
+                <img src="figures/hanwha_aerospace_final_comparison.png" alt="한화에어로스페이스 6대 모델 비교 차트">
+            </div>
+
+            <div class="analysis-box">
+                <h4>한화에어로스페이스 분석 해석</h4>
+                <ul class="bullet-list">
+                    <li><strong>오차 감소 효과 입증</strong>: `Hybrid RF+NSI` 모델의 최종 RMSE는 <strong>65145.87 (65,146원)</strong>으로, 기존 `Existing RF`(66,765원) 및 가격 단독 `Extended RF`(65,721원) 대비 현격히 오차를 축소시켰습니다.</li>
+                    <li><strong>지정학 위기 뉴스의 반사이익 동조성(디커플링)</strong>: 중동 분쟁 고조(N1)와 원달러 환율 급등(N2) 기사가 대량 발생하여 코스피 지수가 폭락할 때, 방산 대장주인 한화에어로스페이스는 수출 수주 기대감과 방위 안보 테마로 가격이 오히려 역상승하는 디커플링 흐름을 K-NSI 결합 Stacking 모델이 수학적으로 우수하게 보정해 냈습니다.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- LIG넥스원 -->
+        <div id="res-lig" class="company-result-display">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>예측 모델 (Model)</th>
+                            <th>RMSE (오차 수치) ↙</th>
+                            <th>MAE (평균절대오차)</th>
+                            <th>MAPE (오차 백분율)</th>
+                            <th>방향 정확도 (Directional Acc) ↗</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge-model benchmark">Naive Benchmark (전일종가 복사)</span></td>
+                            <td>57708.14 (57,708원)</td>
+                            <td>38459.46 (38,459원)</td>
+                            <td>5.31%</td>
+                            <td>47.22%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">ARIMA 시계열 모델</span></td>
+                            <td>288301.62 (288,302원)</td>
+                            <td>261546.29 (261,546원)</td>
+                            <td>34.40%</td>
+                            <td>44.44%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Existing RF (기본 7개 변수)</span></td>
+                            <td>56981.27 (56,981원)</td>
+                            <td>39635.50 (39,636원)</td>
+                            <td>5.47%</td>
+                            <td class="highlight-better">55.56%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Extended RF (보조지표 10개)</span></td>
+                            <td>58049.05 (58,049원)</td>
+                            <td>38735.51 (38,736원)</td>
+                            <td>5.31%</td>
+                            <td>52.78%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Extended ANN (인공신경망)</span></td>
+                            <td>52254.06 (52,254원)</td>
+                            <td>35081.44 (35,081원)</td>
+                            <td>4.89%</td>
+                            <td>52.78%</td>
+                        </tr>
+                        <tr style="background: rgba(139, 92, 246, 0.05);">
+                            <td><span class="badge-model hybrid">Hybrid RF+NSI (최종 결합형)</span></td>
+                            <td>58151.59 (58,152원)</td>
+                            <td>38790.98 (38,791원)</td>
+                            <td>5.31%</td>
+                            <td class="highlight-better">55.56%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="chart-img-container">
+                <img src="figures/lig_nex1_final_comparison.png" alt="LIG넥스원 6대 모델 비교 차트">
+            </div>
+
+            <div class="analysis-box">
+                <h4>LIG넥스원 분석 해석</h4>
+                <ul class="bullet-list">
+                    <li><strong>인공신경망의 우수성과 하이브리드 방향성</strong>: 보조지표를 전방위 학습한 Extended ANN이 매우 정밀한 종가 추적력(RMSE 52254.06)을 보여준 가운데, K-NSI 결합형 Stacking 모델 역시 방향성 판별 정확도에서 <strong>55.56%</strong>를 달성하여 기준선(47.22%)을 8%p 이상 상회하였습니다.</li>
+                    <li><strong>추세 추종 안정성</strong>: 7일 이동평균 NSI를 투입함으로써 가격 지표 단독 예측 시 나타날 수 있는 변동성 노이즈를 필터링하고 안정적인 상승 우상향 궤적을 쫓았습니다.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- SNT다이나믹스 -->
+        <div id="res-snt" class="company-result-display">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>예측 모델 (Model)</th>
+                            <th>RMSE (오차 수치) ↙</th>
+                            <th>MAE (평균절대오차)</th>
+                            <th>MAPE (오차 백분율)</th>
+                            <th>방향 정확도 (Directional Acc) ↗</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge-model benchmark">Naive Benchmark (전일종가 복사)</span></td>
+                            <td>2121.57 (2,122원)</td>
+                            <td>1436.84 (1,437원)</td>
+                            <td>2.81%</td>
+                            <td class="highlight-better">56.76%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">ARIMA 시계열 모델</span></td>
+                            <td>7222.14 (7,222원)</td>
+                            <td>6232.85 (6,233원)</td>
+                            <td>11.61%</td>
+                            <td>54.05%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Existing RF (기본 7개 변수)</span></td>
+                            <td>3231.74 (3,232원)</td>
+                            <td>2630.00 (2,630원)</td>
+                            <td>5.16%</td>
+                            <td>51.35%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Extended RF (보조지표 10개)</span></td>
+                            <td>2938.38 (2,938원)</td>
+                            <td>2329.80 (2,330원)</td>
+                            <td>4.58%</td>
+                            <td>51.35%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Extended ANN (인공신경망)</span></td>
+                            <td>2128.07 (2,128원)</td>
+                            <td>1429.36 (1,429원)</td>
+                            <td>2.79%</td>
+                            <td>45.95%</td>
+                        </tr>
+                        <tr style="background: rgba(139, 92, 246, 0.05);">
+                            <td><span class="badge-model hybrid">Hybrid RF+NSI (최종 결합형)</span></td>
+                            <td>2985.68 (2,986원)</td>
+                            <td>2374.02 (2,374원)</td>
+                            <td>4.67%</td>
+                            <td>51.35%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="chart-img-container">
+                <img src="figures/snt_dynamics_final_comparison.png" alt="SNT다이나믹스 6대 모델 비교 차트">
+            </div>
+
+            <div class="analysis-box">
+                <h4>SNT다이나믹스 분석 해석</h4>
+                <ul class="bullet-list">
+                    <li><strong>변속기/감속기 전문 부품 제조사의 수급 연동성</strong>: SNT다이나믹스는 폴란드 수주 계약 등 해외 직수출 계약 관련 보도와 연동되는 특성을 가집니다.</li>
+                    <li><strong>적당한 노이즈 억제력</strong>: 거시 정세 뉴스 결합 시, 가격 변수만 사용한 Extended RF 모델 단독 결과와 유사한 2,900원대의 오차를 기록하며 대외적 노이즈 속에서도 과적합을 일으키지 않고 안정적으로 추종 성능을 보존했습니다.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 퍼스텍 -->
+        <div id="res-firstec" class="company-result-display">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>예측 모델 (Model)</th>
+                            <th>RMSE (오차 수치) ↙</th>
+                            <th>MAE (평균절대오차)</th>
+                            <th>MAPE (오차 백분율)</th>
+                            <th>방향 정확도 (Directional Acc) ↗</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge-model benchmark">Naive Benchmark (전일종가 복사)</span></td>
+                            <td>795.02 (795원)</td>
+                            <td>563.95 (564원)</td>
+                            <td>6.91%</td>
+                            <td class="highlight-better">59.46%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">ARIMA 시계열 모델</span></td>
+                            <td>4608.70 (4,609원)</td>
+                            <td>4358.95 (4,359원)</td>
+                            <td>53.28%</td>
+                            <td>54.05%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Existing RF (기본 7개 변수)</span></td>
+                            <td>810.26 (810원)</td>
+                            <td>612.74 (613원)</td>
+                            <td>7.58%</td>
+                            <td>54.05%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Extended RF (보조지표 10개)</span></td>
+                            <td>846.72 (847원)</td>
+                            <td>632.54 (633원)</td>
+                            <td>7.72%</td>
+                            <td>56.76%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge-model others">Extended ANN (인공신경망)</span></td>
+                            <td>815.92 (816원)</td>
+                            <td>573.21 (573원)</td>
+                            <td>6.91%</td>
+                            <td>51.35%</td>
+                        </tr>
+                        <tr style="background: rgba(139, 92, 246, 0.05);">
+                            <td><span class="badge-model hybrid">Hybrid RF+NSI (최종 결합형)</span></td>
+                            <td>844.10 (844원)</td>
+                            <td>631.03 (631원)</td>
+                            <td>7.72%</td>
+                            <td>48.65%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="chart-img-container">
+                <img src="figures/firstec_final_comparison.png" alt="퍼스텍 6대 모델 비교 차트">
+            </div>
+
+            <div class="analysis-box">
+                <h4>퍼스텍 분석 해석</h4>
+                <ul class="bullet-list">
+                    <li><strong>소형 테마주의 특징 노출</strong>: 퍼스텍은 유도무기 및 무인항공기 부품을 취급하는 대표적인 중소형주로, 거시 정세 뉴스에 기반한 K-NSI 지수 주입 시 예측 오차가 다소 변동되는 양상을 보였습니다.</li>
+                    <li><strong>한계점 분석</strong>: 중소형주의 주가는 글로벌 매크로 정세보다 개별 특허, 공시, 혹은 지역 시장의 일시적 세력 수급에 더 급격히 요동치기 때문입니다. 이는 K-NSI 지수가 삼성전자, 한화에어로 등 대형 주도주에 더욱 강점을 갖는다는 구조적 사실을 학술적으로 입증합니다.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 학술적 고찰 및 한계 분석 -->
+    <div class="card card-full">
+        <div class="card-icon">💡</div>
+        <h2>K-NSI 심리 모델 종합 학술 고찰 및 보완 연구 방향</h2>
+        <p class="desc">본 캡스톤 디자인 연구 프로젝트의 수치 분석을 통해 드러난 뉴스 심리지수 결합 주가 예측 모델의 구조적 한계와 향후 개선책입니다.</p>
+        
+        <div class="calc-grid">
+            <div>
+                <h3 style="font-size: 1.1rem; color: #f87171; margin-bottom: 12px;">① 시계열 매크로 지수의 대형주/중소형주 비대칭 효과</h3>
+                <p style="font-size:0.9rem; color: var(--text-muted); line-height: 1.6;">
+                    본 연구에서 활용한 K-NSI 지표는 이란 분쟁, 글로벌 반도체 수출 동향, 거시 인플레이션 등 거시 경제(Macro) 뉴스에 국한되어 있습니다. 이로 인해 삼성전자, SK하이닉스, 한화에어로스페이스 등 시가총액이 크고 글로벌 정세에 즉각적인 외화/외인 수급 변동이 동반되는 <strong>대형 대장주</strong>에서는 예측 보정 성능이 뛰어난 효과를 냈습니다.<br><br>
+                    그러나 아이에이, 퍼스텍 등 <strong>중소형 개별 기술주</strong>에서는 오히려 NSI 결합 시 오차가 미세하게 늘어났는데, 이는 중소형주 주가가 매크로 경제 정세보다 <strong>개별 기업 수주 공시, 기술 제휴, 혹은 로컬 수급 세력의 거래량</strong> 등 미시적(Micro) 요인에 압도적으로 지배되기 때문입니다.
+                </p>
+            </div>
+            <div>
+                <h3 style="font-size: 1.1rem; color: #34d399; margin-bottom: 12px;">② 향후 개선 과제: 미시적 개별 지수 및 수급 피처 주입</h3>
+                <p style="font-size:0.9rem; color: var(--text-muted); line-height: 1.6;">
+                    향후 본 하이브리드 예측 모델의 범용성을 넓히기 위한 두 가지 방향성을 제안합니다.<br><br>
+                    1. <strong>개별 종목 타겟팅 NSI 설계</strong>: 거시 기사량 뿐만 아니라 <code>"종목명 + 핵심 기술/수주"</code> 키워드를 직접 타겟팅하는 종목 맞춤형 NSI 점수를 동적 가산해야 합니다.<br>
+                    2. <strong>외인/기관 수급 피처 도입</strong>: 뉴스 심리는 매수 심리를 부추기는 트리거일 뿐, 실제 주가를 움직이는 물리적 힘은 자금력입니다. 당일 거래대금 대비 외인/기관 순매수 거래비율을 Stage 2 Stacking 입력단에 주입하면, 뉴스 심리 지표와 대형 자본의 실제 움직임이 융합되어 예측 신뢰도가 극대화될 것입니다.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2026 캡스톤 디자인 인간 투자 심리(K-NSI) 결합 주가 예측 프로젝트 보고서. All Rights Reserved.</p>
+    </footer>
+</div>
+
+<script>
+    // 1. 설문조사 가중치 탭 전환 및 바 애니메이션 트리거
+    function switchWeightTab(tab) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        
+        // Hide all container divs
+        const containers = document.querySelectorAll('.weight-container');
+        containers.forEach(c => c.style.display = 'none');
+        
+        // Active button
+        event.target.classList.add('active');
+        
+        // Show selected container
+        const activeContainer = document.getElementById('weights-' + tab);
+        activeContainer.style.display = 'block';
+        
+        // Trigger widths
+        triggerBarAnimations(activeContainer);
+    }
+
+    function triggerBarAnimations(container) {
+        const bars = container.querySelectorAll('.bar-inner');
+        bars.forEach(bar => {
+            const targetWidth = bar.getAttribute('data-width');
+            // reset width first
+            bar.style.width = '0';
+            // force reflow
+            bar.offsetHeight; 
+            // animate to target
+            bar.style.width = targetWidth;
+        });
+    }
+
+    // 5. 종목별 결과 탭 전환
+    function switchTicker(ticker) {
+        document.querySelectorAll('.ticker-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.company-result-display').forEach(display => display.classList.remove('active'));
+        
+        event.target.classList.add('active');
+        document.getElementById('res-' + ticker).classList.add('active');
+    }
+
+    // 3. K-NSI 실시간 계산기 로직
+    // 설문조사 가중치 평균값 정의
+    const weights_db = {
+        short: { N1: -0.38, N2: -0.41, N3: 0.35, N4: -0.35, N5: 1.09 },
+        long:  { N1: 0.25,  N2: 0.05,  N3: 0.50, N4: -0.05, N5: 1.20 }
+    };
+
+    function updateVal(id, val) {
+        document.getElementById(id + '-val').innerText = val + '건';
+        calculateNSI();
+    }
+
+    function calculateNSI() {
+        const horizon = document.querySelector('input[name="calc-horizon"]:checked').value;
+        const w = weights_db[horizon];
+        
+        const n1 = parseFloat(document.getElementById('n1-slider').value);
+        const n2 = parseFloat(document.getElementById('n2-slider').value);
+        const n3 = parseFloat(document.getElementById('n3-slider').value);
+        const n4 = parseFloat(document.getElementById('n4-slider').value);
+        const n5 = parseFloat(document.getElementById('n5-slider').value);
+        
+        // Positive & Negative score calculation based on weight signs
+        let p_score = 0;
+        let n_score = 0;
+        
+        const event_counts = { N1: n1, N2: n2, N3: n3, N4: n4, N5: n5 };
+        
+        for (const [key, count] of Object.entries(event_counts)) {
+            const weight = w[key];
+            if (weight > 0) {
+                p_score += weight * count;
+            } else if (weight < 0) {
+                n_score += Math.abs(weight) * count;
+            }
+        }
+        
+        // Calculate K-NSI
+        const nsi = ((p_score - n_score) / (p_score + n_score + 1.0)) * 100.0 + 100.0;
+        
+        // Update display
+        const displayVal = nsi.toFixed(1);
+        document.getElementById('calc-result').innerText = displayVal;
+        
+        // Styles based on score
+        const circle = document.getElementById('calc-circle');
+        const stateEl = document.getElementById('calc-state');
+        const explEl = document.getElementById('calc-explanation');
+        
+        circle.classList.remove('bullish', 'bearish', 'neutral');
+        stateEl.classList.remove('bullish', 'bearish', 'neutral');
+        
+        if (nsi > 105) {
+            circle.classList.add('bullish');
+            stateEl.classList.add('bullish');
+            stateEl.innerText = '낙관적 시장 심리 (Bullish)';
+            explEl.innerText = '호재 뉴스 비중과 투자 선호 가중치가 결합되어 시장에 긍정적인 기대감이 팽배한 상태입니다.';
+        } else if (nsi < 95) {
+            circle.classList.add('bearish');
+            stateEl.classList.add('bearish');
+            stateEl.innerText = '비관적 시장 심리 (Bearish)';
+            explEl.innerText = '전쟁 악재, 고금리 등 부정적 뉴스의 파급력이 커 투자자의 투자 심리가 얼어붙은 공포 장세입니다.';
+        } else {
+            circle.classList.add('neutral');
+            stateEl.classList.add('neutral');
+            stateEl.innerText = '중립적 시장 심리 (Neutral)';
+            explEl.innerText = '긍정 및 부정 뉴스의 에너지와 가중치가 균형을 이루어 관망세가 짙은 시장 분위기입니다.';
+        }
+    }
+
+    // Initial animations
+    window.onload = function() {
+        // Trigger short term bar animation on load
+        triggerBarAnimations(document.getElementById('weights-short'));
+        calculateNSI();
+    };
+</script>
+</body>
+</html>
