@@ -255,8 +255,9 @@ def run_comparison_pipeline(name: str, path: str, short_w: dict, long_w: dict, n
         
         # 회귀 지표
         metrics = regression_metrics(y_test_price, price_pred)
-        # 방향 정확도
-        dir_acc = direction_accuracy(results_return[model_name], y_test_r.values)
+        # 방향 정확도 (가격 기준: 내일 종가가 오늘보다 올랐는지/내렸는지 판정)
+        # ※ 수익률을 넣으면 "수익률 크기 비교"가 되어 방향성과 무관한 값이 나옴
+        dir_acc = direction_accuracy(y_test_price, price_pred)
         metrics["direction_accuracy"] = dir_acc
         metrics["Model"] = model_name
         metrics["Company"] = name
