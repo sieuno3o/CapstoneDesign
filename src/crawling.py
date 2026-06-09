@@ -1,131 +1,87 @@
-import csv
 import time
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
-
+import pandas as pd
 import requests
-from bs4 import BeautifulSoup
-from dateutil import parser as date_parser
+import re
 
-BASE_URL = "https://finance.naver.com/news/mainnews.naver"
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
-    ),
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-    "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
-    "Referer": "https://finance.naver.com/",
-}
+# ==========================================
+# [중요] 발급받은 네이버 API 키를 여기에 입력하세요!
+# ==========================================
+NAVER_CLIENT_ID = "ClaD1mTIODD0xCGIyFGV"
+NAVER_CLIENT_SECRET = "qfXMm50SS9"
 
-session = requests.Session()
-session.headers.update(HEADERS)
+# 💡 금융 뉴스 껍데기 단어 차단 리스트
+stop_words = [
+    '증시', '시장', '코스피', '코스닥', '주가', '뉴스', '기사', '게시판', '특징주', '네이버', '금융', 
+    '출발', '국내', '개장', '시황', '종합', '마감', '오전', '오후', '해외', '외인', '기관', '개인', '투자자',
+    '뉴욕증시', '미국', '뉴욕', '나스닥', '다우', '유럽', '아시아', '글로벌', '하루', '이틀', '연속', '닷새',
+    '등', '및', '위해', '이유', '속', '줄', '중', '것', '이', '그', '대해', '다시', '이번', '올해', '내년',
+    '상승', '하락', '반등', '폭락', '호조', '부진', '급등', '급락', '랠리', '쇼크', '돌파', '위기', '우려',
+    '전망', '분석', '대비', '지수', '거래일', '기대', '기대감', '영향', '때문', '우려에', '속보'
+]
 
-
-def fetch_news_page(page: int, section_id: str = "101", section_id2: str = "258", mode: str = "LSS2D") -> str:
-    params = {
-        "mode": mode,
-        "section_id": section_id,
-        "section_id2": section_id2,
-        "page": str(page),
+def crawl_pure_top_keywords():
+    raw_titles = []
+    today = datetime.now()
+    date_list = [(today - timedelta(days=i)) for i in range(60)] # 두 달치
+    
+    print(f"📅 [정밀 사건 키워드 추출] 두 달치({len(date_list)}일) 메인 헤드라인 뉴스를 수집합니다...")
+    
+    url = "https://openapi.naver.com/v1/search/news.json"
+    headers = {
+        "X-Naver-Client-Id": NAVER_CLIENT_ID,
+        "X-Naver-Client-Secret": NAVER_CLIENT_SECRET
     }
-    response = session.get(BASE_URL, params=params, timeout=20)
-    response.raise_for_status()
-    return response.text
-
-
-def parse_news_items(html: str) -> List[Dict[str, str]]:
-    soup = BeautifulSoup(html, "html.parser")
-    items: List[Dict[str, str]] = []
-
-    for li in soup.select("ul.newsList li"):
-        title_tag = li.select_one("dd.articleSubject a")
-        date_tag = li.select_one("span.wdate, span.date")
-        if title_tag is None or date_tag is None:
+    
+    for target_date in date_list:
+        search_query = f"증시 {target_date.strftime('%Y.%m.%d')}"
+        
+        params = {
+            "query": search_query,
+            "display": 100,
+            "start": 1,
+            "sort": "sim" # 💡 네이버가 공인한 그날의 가장 핫한 뉴스 순 정렬
+        }
+        
+        try:
+            response = requests.get(url, headers=headers, params=params)
+            if response.status_code == 200:
+                items = response.json().get("items", [])
+                for item in items:
+                    title = item["title"].replace("<b>", "").replace("</b>", "").replace("&quot;", '"').strip()
+                    raw_titles.append(title)
+            time.sleep(0.1)
+        except:
             continue
-
-        title = title_tag.get_text(strip=True)
-        date_text = date_tag.get_text(strip=True)
-        items.append({"title": title, "date": date_text})
-
-    return items
-
-
-def parse_date(date_text: str) -> Optional[datetime]:
-    try:
-        return date_parser.parse(date_text)
-    except (ValueError, OverflowError):
-        return None
-
-
-def crawl_naver_finance_news(
-    years: int = 5,
-    max_pages: int = 2000,
-    section_id: str = "101",
-    section_id2: str = "258",
-    mode: str = "LSS2D",
-) -> List[Dict[str, str]]:
-    end_date = datetime.today()
-    threshold = end_date - timedelta(days=years * 365)
-    page = 1
-    news_items: List[Dict[str, str]] = []
-    seen_keys = set()
-
-    while page <= max_pages:
-        html = fetch_news_page(page, section_id=section_id, section_id2=section_id2, mode=mode)
-        page_items = parse_news_items(html)
-        if not page_items:
-            break
-
-        reached_older = False
-        for item in page_items:
-            item_date = parse_date(item["date"])
-            if item_date is None:
-                continue
-
-            if item_date < threshold:
-                reached_older = True
-                continue
-
-            key = (item["title"], item["date"])
-            if key in seen_keys:
-                continue
-
-            seen_keys.add(key)
-            news_items.append({"date": item["date"], "title": item["title"]})
-
-        if reached_older:
-            break
-
-        page += 1
-        time.sleep(0.5)
-
-    return news_items
-
-
-def save_news_to_csv(news_items: List[Dict[str, str]], csv_path: str) -> None:
-    with open(csv_path, "w", encoding="utf-8-sig", newline="") as csv_file:
-        writer = csv.DictWriter(csv_file, fieldnames=["date", "title"])
-        writer.writeheader()
-        writer.writerows(news_items)
-
+            
+    return raw_titles
 
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(description="네이버 금융 뉴스 제목과 날짜를 크롤링하여 CSV로 저장합니다.")
-    parser.add_argument("--output", "-o", default="results/metrics/naver_finance_news.csv", help="저장할 CSV 파일 경로")
-    parser.add_argument("--years", type=int, default=5, help="최근 몇 년간 뉴스까지 수집할지 지정")
-    parser.add_argument("--section-id", default="101", help="네이버 금융 뉴스 section_id")
-    parser.add_argument("--section-id2", default="258", help="네이버 금융 뉴스 section_id2")
-    parser.add_argument("--max-pages", type=int, default=2000, help="최대 크롤링 페이지 수")
-    args = parser.parse_args()
-
-    articles = crawl_naver_finance_news(
-        years=args.years,
-        max_pages=args.max_pages,
-        section_id=args.section_id,
-        section_id2=args.section_id2,
-    )
-    save_news_to_csv(articles, args.output)
-    print(f"Saved {len(articles)} articles to {args.output}")
+    titles = crawl_pure_top_keywords()
+    
+    if titles:
+        word_counts = {}
+        for title in titles:
+            # 순수 단어 분리
+            words = re.findall(r'[가-힣a-zA-Z0-9]{2,}', title)
+            for word in words:
+                # 조사 잘라내기 정제
+                word = re.sub(r'(이|가|은|는|를|에|으로|로|에서|의|과|와|도|만|에 따른|포함)$', '', word)
+                if len(word) >= 2 and word not in stop_words:
+                    word_counts[word] = word_counts.get(word, 0) + 1
+                    
+        # 💡 상위 20개 진짜 알맹이 키워드만 정렬해서 추출
+        top_20 = sorted(word_counts.items(), key=lambda x: x[1], reverse=True)[:20]
+        
+        print("\n" + "=" * 60)
+        print("📊 [최근 두 달간 대한민국 증시를 뒤흔든 진짜 메인 사건 키워드 TOP 20]")
+        print("=" * 60)
+        
+        # 💡 "result : " 포맷 출력
+        results = [f"{word}({count}회)" for word, count in top_20]
+        print(f"result : 핵심 키워드 명단 -> {', '.join(results)}")
+        print("=" * 60)
+        print("💡 위 단어들을 바탕으로 '투자 심리 영향도 설문조사' 항목을 구성하면 완벽합니다.")
+        
+    else:
+        print("❌ 데이터를 가져오지 못했습니다.")
