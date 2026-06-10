@@ -56,26 +56,39 @@ CATEGORIES = {
 SAVE_PATH = "data/raw/macro_news_counts_90d.csv"
 
 def fetch_daum_news_texts(query: str, date_str: str) -> list:
-    """Daum에서 특정 일자의 뉴스 검색 결과를 요청하여 기사 제목 및 텍스트 리스트를 반환합니다."""
-    params = {
-        "w": "news",
-        "q": query,
-        "DA": "STC",
-        "period": "u",
-        "sd": f"{date_str}000000",
-        "ed": f"{date_str}235959",
-    }
-    
+    """Daum에서 특정 일자의 뉴스 검색 결과를 2페이지(20개 기사)까지 순회하며 기사 제목을 가져옵니다."""
     texts = []
-    try:
-        response = requests.get(BASE_URL, params=params, headers=HEADERS, timeout=15)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, "html.parser")
-            # Daum 뉴스 기사 제목 영역 추출
-            for tag in soup.select("ul.c-list-basic li div.item-title a, ul.list_news li div.wrap_cont a"):
-                texts.append(tag.get_text(strip=True))
-    except Exception as e:
-        print(f"  [오류] 검색 요청 중 예외 발생 ({query}, {date_str}): {e}")
+    
+    # 🌟 변경 포인트 1: 1페이지와 2페이지를 순서대로 도는 루프 추가
+    for page in range(1, 3):  
+        params = {
+            "w": "news",
+            "q": query,
+            "DA": "STC",
+            "period": "u",
+            "sd": f"{date_str}000000",
+            "ed": f"{date_str}235959",
+            "p": page  # 🌟 변경 포인트 2: URL에 페이지 번호(p) 파라미터 매핑
+        }
+        
+        try:
+            response = requests.get(BASE_URL, params=params, headers=HEADERS, timeout=15)
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.text, "html.parser")
+                page_texts = []
+                for tag in soup.select("ul.c-list-basic li div.item-title a, ul.list_news li div.wrap_cont a"):
+                    page_texts.append(tag.get_text(strip=True))
+                
+                # 🌟 변경 포인트 3: 다음 페이지에 기사가 아예 없다면 (검색 결과 끝) 루프 탈출
+                if not page_texts:
+                    break
+                    
+                texts.extend(page_texts)
+        except Exception as e:
+            print(f"  [오류] 검색 요청 중 예외 발생 ({query}, {date_str}, Page {page}): {e}")
+            
+        # 🌟 변경 포인트 4: 페이지 전환 시 포털 차단을 막기 위해 0.3~0.5초 대기
+        time.sleep(random.uniform(0.3, 0.5))
         
     return texts
 
