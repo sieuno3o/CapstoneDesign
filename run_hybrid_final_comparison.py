@@ -65,6 +65,7 @@ NEWS_PATH    = os.path.join(BASE_DIR, "data", "raw", "macro_news_counts_90d.csv"
 EXCEL_PATH   = os.path.join(BASE_DIR, "주가 데이터와 인간의 투자심리를 활용한 주가 예측 모델 개발 설문조사(응답).xlsx")
 METRICS_DIR  = os.path.join(BASE_DIR, "results", "metrics")
 FIGURES_DIR  = os.path.join(BASE_DIR, "results", "figures")
+REPORT_PATH  = os.path.join(BASE_DIR, "results", "hybrid_final_comparison_report.html")
 
 os.makedirs(METRICS_DIR, exist_ok=True)
 os.makedirs(FIGURES_DIR, exist_ok=True)
@@ -308,7 +309,84 @@ def run_comparison_pipeline(name: str, path: str, short_w: dict, long_w: dict, n
     return metrics_list
 
 # ═══════════════════════════════════════════
-# 3. 메인 실행
+# 3. HTML 보고서 생성 함수
+# ═══════════════════════════════════════════
+
+def generate_html_report(df_summary, figures_dir, report_path):
+    overall_metrics = df_summary.groupby("Model").mean().reset_index()
+    overall_metrics = overall_metrics[["Model", "rmse", "mae", "mape", "mbe", "r2", "direction_accuracy"]]
+    overall_metrics = overall_metrics.round({"rmse": 2, "mae": 2, "mape": 2, "mbe": 2, "r2": 4, "direction_accuracy": 4})
+
+    company_table = df_summary.copy()
+    company_table = company_table[["Company", "Model", "rmse", "mae", "mape", "mbe", "r2", "direction_accuracy"]]
+    company_table = company_table.round({"rmse": 2, "mae": 2, "mape": 2, "mbe": 2, "r2": 4, "direction_accuracy": 4})
+
+    html = f"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>Hybrid Final Comparison Report</title>
+  <style>
+    body {{ font-family: 'Malgun Gothic', Arial, sans-serif; margin: 24px; background: #f8fafc; color: #111827; }}
+    h1, h2 {{ color: #1f2937; }}
+    table {{ border-collapse: collapse; width: 100%; margin-bottom: 24px; }}
+    th, td {{ border: 1px solid #d1d5db; padding: 10px; text-align: center; }}
+    th {{ background: #111827; color: #f8fafc; }}
+    tr:nth-child(even) {{ background: #f3f4f6; }}
+    .section {{ margin-bottom: 40px; }}
+    .figure-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px; }}
+    .figure-card {{ background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08); padding: 16px; }}
+    .figure-card img {{ width: 100%; height: auto; border-radius: 6px; }}
+    .figure-card h3 {{ margin: 0 0 10px; font-size: 1rem; color: #111827; }}
+    .footer {{ font-size: 0.95rem; color: #475569; margin-top: 32px; }}
+    .badge {{ display: inline-block; padding: 4px 10px; border-radius: 999px; background: #2563eb; color: white; font-size: 0.85rem; margin-right: 8px; }}
+  </style>
+</head>
+<body>
+  <h1>Hybrid Final Comparison Report</h1>
+  <p>이 보고서는 <strong>6개 모델</strong>의 최종 예측 성능을 종합 비교하며, 각 모델의 평균 지표와 회사별 지표를 모두 제공합니다.</p>
+
+  <div class="section">
+    <h2>1. 모델별 평균 성능 지표</h2>
+    {overall_metrics.to_html(index=False, classes='summary-table', border=0, justify='center')}
+  </div>
+
+  <div class="section">
+    <h2>2. 회사별 모델 성능 지표</h2>
+    {company_table.to_html(index=False, classes='company-table', border=0, justify='center')}
+  </div>
+
+  <div class="section">
+    <h2>3. 대상 종목별 비교 차트</h2>
+    <div class="figure-grid">
+"""
+
+    for company in sorted(df_summary["Company"].unique()):
+        image_path = os.path.join(figures_dir, f"{company}_final_comparison.png")
+        if os.path.exists(image_path):
+            html += f"""
+      <div class="figure-card">
+        <h3>{company.replace('_', ' ').title()}</h3>
+        <img src="figures/{company}_final_comparison.png" alt="{company} final comparison" />
+      </div>
+"""
+
+    html += f"""
+    </div>
+    <div class="footer">
+      <p>생성 경로: {report_path}</p>
+      <p>데이터 출처: data/rawdata/*.csv 및 data/raw/macro_news_counts_90d.csv</p>
+    </div>
+</body>
+</html>
+"""
+
+    with open(report_path, "w", encoding="utf-8") as f:
+        f.write(html)
+    print(f"  [HTML 보고서 생성 완료] -> {report_path}")
+
+# ═══════════════════════════════════════════
+# 4. 메인 실행
 # ═══════════════════════════════════════════
 
 def main():
@@ -343,11 +421,13 @@ def main():
         df_summary = df_summary[["Company", "Model", "rmse", "mae", "mape", "mbe", "r2", "direction_accuracy"]]
         summary_path = os.path.join(METRICS_DIR, "hybrid_final_comparison_summary.csv")
         df_summary.to_csv(summary_path, index=False, encoding="utf-8-sig")
+        generate_html_report(df_summary, FIGURES_DIR, REPORT_PATH)
 
         print("\n" + "="*80)
         print("   [6대 모델 종합 비교 완료 및 성능 지표 테이블]")
         print("="*80)
-        print(f"결과 저장 경로: {summary_path}\n")
+        print(f"CSV 결과 저장 경로: {summary_path}")
+        print(f"HTML 보고서 저장 경로: {REPORT_PATH}\n")
         print(df_summary.to_string(index=False))
         print("="*80)
     else:
