@@ -1,8 +1,8 @@
 from src.train import train_all_models
 from src.train_ai_pipeline import train_all_ai_models
 
-def run_rf_extended():
-    """확장 RF 파이프라인 (run_rf_extended.py 로직을 main에서 직접 호출)"""
+def train_rf_extended():
+    """확장 RF 파이프라인 (train_rf_extended.py 로직을 main에서 직접 호출)"""
     import os
     from pathlib import Path
     from src.train_rf_extended import train_rf_extended_pipeline
@@ -60,7 +60,7 @@ def main():
     train_all_ai_models()
 
     # 2-1. 확장 RF 모델 (기술적 지표 추가 버전)
-    run_rf_extended()
+    train_rf_extended()
 
 
 if __name__ == "__main__":

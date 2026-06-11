@@ -377,8 +377,8 @@ def build_html():
 </html>
 """
     # HTML 저장
-    dest_path_desktop = os.path.join(DESKTOP_DIR, "hybrid_rf_report.html")
-    dest_path_proj = os.path.join(BASE_DIR, "results", "hybrid_rf_report.html")
+    dest_path_desktop = os.path.join(DESKTOP_DIR, "hybrid_model_report.html")
+    dest_path_proj = os.path.join(BASE_DIR, "results", "reports", "hybrid_model_report.html")
     
     with open(dest_path_proj, "w", encoding="utf-8") as f:
         f.write(html_content)

@@ -149,7 +149,7 @@ HTML_TEMPLATE = Template("""<!DOCTYPE html>
     <header>
         <div class="badge">Final Model Report</div>
         <h1>2-Step Psychological Correction 결과 보고서</h1>
-        <p>이 보고서는 <strong>train_2step_psychological_correction.py</strong> 실행 결과로 생성된 지표와 그림을 기반으로 작성되었습니다. 각 기업별 baseline 모델과 correction 모델의 성능을 한눈에 확인할 수 있습니다.</p>
+        <p>이 보고서는 <strong>train_2step_correction.py</strong> 실행 결과로 생성된 지표와 그림을 기반으로 작성되었습니다. 각 기업별 baseline 모델과 correction 모델의 성능을 한눈에 확인할 수 있습니다.</p>
     </header>
 
     <section class="card">

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-run_hybrid_final_comparison.py
+train_hybrid_comparison.py
 ------------------------------
 오리지널 5개 모델(Benchmark, ARIMA, Existing RF, Extended RF, Extended ANN)에
 뉴스 심리지수(K-NSI)를 결합한 [Hybrid Sentiment RF] 모델을 신규 추가하여,
