@@ -386,7 +386,7 @@ def generate_html_report(df_summary, figures_dir, report_path):
     </div>
     <div class="footer">
       <p>생성 경로: {report_path}</p>
-      <p>데이터 출처: data/rawdata/*.csv 및 data/raw/macro_news_counts_90d.csv</p>
+      <p>데이터 출처: data/raw/*.csv 및 data/sentiment/macro_news_counts_90d.csv</p>
     </div>
 </body>
 </html>

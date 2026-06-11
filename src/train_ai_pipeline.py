@@ -107,7 +107,7 @@ def train_ai_pipeline(data_name: str, file_path: str):
     return rf_metrics, ann_metrics
 
 
-def train_all_ai_models(raw_data_dir="data/rawdata"):
+def train_all_ai_models(raw_data_dir="data/raw"):
     target_companies = [
         "hanwha_aerospace", "lig_nex1", "snt_dynamics", "firstec",
         "samsung_electronics", "sk_hynix", "wonik_ips", "ia",
