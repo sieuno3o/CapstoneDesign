@@ -213,6 +213,13 @@ def run_comparison_pipeline(name: str, path: str, short_w: dict, long_w: dict, n
     results_return["Existing RF"] = rf_orig_ret
     results_price["Existing RF"]  = ret_to_price(rf_orig_ret)
 
+    # 4. Existing ANN (7 features - 기존 논문 변수)
+    X_val_orig   = scaler_orig.transform(val_df[ORIGINAL_FEATURES])
+    ann_orig = train_ann_model(X_train_orig, y_train_r.values, X_val=X_val_orig, y_val=y_val_r.values)
+    ann_orig_ret = predict_ai_model(ann_orig, X_test_orig)
+    results_return["Existing ANN"] = ann_orig_ret
+    results_price["Existing ANN"]  = ret_to_price(ann_orig_ret)
+
     # 4. Extended RF (10 features)
     scaler_ext  = MinMaxScaler()
     X_train_ext = scaler_ext.fit_transform(train_df[EXTENDED_FEATURES])
@@ -274,11 +281,13 @@ def run_comparison_pipeline(name: str, path: str, short_w: dict, long_w: dict, n
     ax.plot(test_dates, results_price["ARIMA"], label=f"ARIMA Forecast              RMSE={rmse_dict['ARIMA']:,.0f}", color="crimson", linestyle="-.", linewidth=1.6)
     # 4. Existing RF
     ax.plot(test_dates, results_price["Existing RF"], label=f"Existing RF  (7 features)   RMSE={rmse_dict['Existing RF']:,.0f}", color="darkorange", linestyle="--", linewidth=1.8)
-    # 5. Extended RF
+    # 5. Existing ANN
+    ax.plot(test_dates, results_price["Existing ANN"], label=f"Existing ANN (7 features)   RMSE={rmse_dict['Existing ANN']:,.0f}", color="coral", linestyle="--", linewidth=1.8)
+    # 6. Extended RF
     ax.plot(test_dates, results_price["Extended RF"], label=f"Extended RF  (10 features)  RMSE={rmse_dict['Extended RF']:,.0f}", color="royalblue", linestyle="-", linewidth=2.0)
-    # 6. Extended ANN
+    # 7. Extended ANN
     ax.plot(test_dates, results_price["Extended ANN"], label=f"Extended ANN (10 features)  RMSE={rmse_dict['Extended ANN']:,.0f}", color="forestgreen", linestyle="-", linewidth=2.0)
-    # 7. 최종 Hybrid RF+NSI (두껍고 눈에 띄는 퍼플 실선)
+    # 8. 최종 Hybrid RF+NSI (두껍고 눈에 띄는 퍼플 실선)
     ax.plot(test_dates, results_price["Hybrid RF+NSI"], label=f"Hybrid RF+NSI (12 features) RMSE={rmse_dict['Hybrid RF+NSI']:,.0f}", color="darkviolet", linestyle="-", linewidth=2.5, zorder=4)
 
     ax.set_title(f"Model Predictions Comparison — {name.replace('_', ' ').title()}", fontsize=14, fontweight="bold", pad=14)
