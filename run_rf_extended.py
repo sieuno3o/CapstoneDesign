@@ -1,4 +1,5 @@
 import os
+import sys
 import pandas as pd
 from pathlib import Path
 from src.train_rf_extended import train_rf_extended_pipeline
@@ -19,6 +20,11 @@ stocks = {
 }
 
 if __name__ == "__main__":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except:
+        pass
+
     print("=" * 80)
     print("      [머신러닝 입력변수 추가 및 비교 분석 프로젝트 실행]      ")
     print("=" * 80)
@@ -50,11 +56,11 @@ if __name__ == "__main__":
     if all_results:
         # Combine all metrics and save to results/metrics
         df_summary = pd.concat(all_results, ignore_index=True)
-        summary_save_path = "results/metrics/ai_extended_models_summary.csv"
+        summary_save_path = "results/metrics/hybrid_comparison_summary.csv"
         df_summary.to_csv(summary_save_path, index=False, encoding="utf-8-sig")
         
         print("\n" + "=" * 80)
-        print("      [종합 모델 예측 성능 비교 완료]      ")
+        print("      [종합 하이브리드 모델 예측 성능 비교 완료]      ")
         print("=" * 80)
         print(f"종합 결과 파일 저장 경로: {summary_save_path}\n")
         
@@ -65,53 +71,41 @@ if __name__ == "__main__":
         print(df_avg.to_string(index=False))
         print("-" * 80)
 
-        # 기본 RF vs 확장 RF 성능 개선 요약
-        print("\n### [RMSE 성능 비교 테이블 (Existing RF 대비 개선율 & Naive 대비 성능)]")
-        print("-" * 80)
-        print("[RMSE 개선율 계산 기준]")
-        print("  - RF_vs_Existing_%   : Existing RF(7개 피처) 대비 Extended RF 성능 향상률")
-        print("  - ANN_vs_Existing_%  : Existing RF(7개 피처) 대비 Extended ANN 성능 향상률")
-        print("  - RF_vs_Naive_%      : Naive(전일종가 비교) 대비 Extended RF 성능 향상률")
-        print("  - ANN_vs_Naive_%     : Naive(전일종가 비교) 대비 Extended ANN 성능 향상률")
+        # Existing RF 및 Extended RF 대비 성능 개선 요약
+        print("\n### [RMSE 성능 비교 테이블 (Hybrid RF+NSI 대비 개선율)]")
         print("-" * 80)
         df_exist = df_summary[df_summary["Model"] == "Existing RF"][["Company", "rmse"]].rename(columns={"rmse": "rmse_existing"})
-        df_ext   = df_summary[df_summary["Model"] == "Extended RF"][["Company", "rmse"]].rename(columns={"rmse": "rmse_extended_rf"})
-        df_ann   = df_summary[df_summary["Model"] == "Extended ANN"][["Company", "rmse"]].rename(columns={"rmse": "rmse_extended_ann"})
+        df_ext   = df_summary[df_summary["Model"] == "Extended RF"][["Company", "rmse"]].rename(columns={"rmse": "rmse_extended"})
+        df_hyb   = df_summary[df_summary["Model"] == "Hybrid RF+NSI"][["Company", "rmse"]].rename(columns={"rmse": "rmse_hybrid"})
         df_naive = df_summary[df_summary["Model"] == "Benchmark"][["Company", "rmse"]].rename(columns={"rmse": "rmse_naive"})
+        
         df_compare = pd.merge(df_exist, df_ext, on="Company")
-        df_compare = pd.merge(df_compare, df_ann, on="Company")
+        df_compare = pd.merge(df_compare, df_hyb, on="Company")
         df_compare = pd.merge(df_compare, df_naive, on="Company")
 
-        # Existing RF 대비 개선율 (양수 = 개선, 음수 = 악화)
-        df_compare["RF_vs_Existing_%"] = (
-            (df_compare["rmse_existing"] - df_compare["rmse_extended_rf"]) / df_compare["rmse_existing"] * 100
+        # 개선율 계산
+        df_compare["Hybrid_vs_Existing_%"] = (
+            (df_compare["rmse_existing"] - df_compare["rmse_hybrid"]) / df_compare["rmse_existing"] * 100
         ).round(2)
-        df_compare["ANN_vs_Existing_%"] = (
-            (df_compare["rmse_existing"] - df_compare["rmse_extended_ann"]) / df_compare["rmse_existing"] * 100
+        df_compare["Hybrid_vs_Extended_%"] = (
+            (df_compare["rmse_extended"] - df_compare["rmse_hybrid"]) / df_compare["rmse_extended"] * 100
         ).round(2)
-
-        # Naive 대비 개선율 (양수 = Naive보다 좋음, 음수 = Naive보다 나쁘)
-        df_compare["RF_vs_Naive_%"] = (
-            (df_compare["rmse_naive"] - df_compare["rmse_extended_rf"]) / df_compare["rmse_naive"] * 100
-        ).round(2)
-        df_compare["ANN_vs_Naive_%"] = (
-            (df_compare["rmse_naive"] - df_compare["rmse_extended_ann"]) / df_compare["rmse_naive"] * 100
+        df_compare["Hybrid_vs_Naive_%"] = (
+            (df_compare["rmse_naive"] - df_compare["rmse_hybrid"]) / df_compare["rmse_naive"] * 100
         ).round(2)
 
-        df_compare["RF_result"]  = df_compare["RF_vs_Existing_%"].apply(lambda x: "✅ 개선" if x > 0 else "❌ 악화")
-        df_compare["ANN_result"] = df_compare["ANN_vs_Existing_%"].apply(lambda x: "✅ 개선" if x > 0 else "❌ 악화")
+        df_compare["Result_vs_Existing"] = df_compare["Hybrid_vs_Existing_%"].apply(lambda x: "개선" if x > 0 else "악화")
+        df_compare["Result_vs_Extended"] = df_compare["Hybrid_vs_Extended_%"].apply(lambda x: "개선" if x > 0 else "악화")
+        
         print(df_compare.to_string(index=False))
         print("-" * 80)
-        rf_improved  = (df_compare["RF_vs_Existing_%"] > 0).sum()
-        ann_improved = (df_compare["ANN_vs_Existing_%"] > 0).sum()
-        rf_beat_naive  = (df_compare["RF_vs_Naive_%"] > 0).sum()
-        ann_beat_naive = (df_compare["ANN_vs_Naive_%"] > 0).sum()
+        
+        hyb_improved_exist  = (df_compare["Hybrid_vs_Existing_%"] > 0).sum()
+        hyb_improved_ext    = (df_compare["Hybrid_vs_Extended_%"] > 0).sum()
         total = len(df_compare)
-        print(f"\n[Existing RF 대비]")
-        print(f"  확장 RF : {total}개 종목 중 {rf_improved}개 개선 / {total - rf_improved}개 악화")
-        print(f"  확장 ANN: {total}개 종목 중 {ann_improved}개 개선 / {total - ann_improved}개 악화")
-        print(f"\n[Naive 벤치마크 대비]")
-        print(f"  확장 RF : {total}개 종목 중 {rf_beat_naive}개 개선(Naive보다 낙음) / {total - rf_beat_naive}개 악화")
-        print(f"  확장 ANN: {total}개 종목 중 {ann_beat_naive}개 개선(Naive보다 낙음) / {total - ann_beat_naive}개 악화")
+        print(f"\n[Hybrid RF+NSI 성능 최종 분석]")
+        print(f"  Existing RF (7개 변수) 대비 : {total}개 종목 중 {hyb_improved_exist}개 개선 / {total - hyb_improved_exist}개 악화")
+        print(f"  Extended RF (10개 변수) 대비 : {total}개 종목 중 {hyb_improved_ext}개 개선 / {total - hyb_improved_ext}개 악화")
     else:
         print("[오류] 결과가 전혀 수집되지 않았습니다.")
+
