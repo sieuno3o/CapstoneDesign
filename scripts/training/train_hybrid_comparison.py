@@ -239,7 +239,61 @@ def run_comparison_pipeline(name: str, path: str, short_w: dict, long_w: dict, n
     results_return["Extended ANN"] = ann_ext_ret
     results_price["Extended ANN"]  = ret_to_price(ann_ext_ret)
 
-    # 6. Hybrid Sentiment RF (10 features + NSI_short + NSI_long)
+    # 6. Ensemble: Extended RF + Extended ANN (3가지 방식 자동 비교 → 최적 선택)
+    # --- 방식 A: 단순 평균 (Simple Average) ---
+    ens_simple_ret  = (rf_ext_ret + ann_ext_ret) / 2.0
+
+    # --- 방식 B: RMSE 역수 기반 가중 평균 (Weighted Average) ---
+    #   val 세트에서 각 모델 성능 측정 후 RMSE가 낮은 모델에 높은 가중치 부여
+    y_val_np = y_val_r.values
+    rf_val_ret  = rf_ext.predict(X_val_ext)
+    ann_val_ret = predict_ai_model(ann_ext, X_val_ext)
+    rmse_rf_val  = np.sqrt(np.mean((y_val_np - rf_val_ret) ** 2))
+    rmse_ann_val = np.sqrt(np.mean((y_val_np - ann_val_ret) ** 2))
+    w_rf  = 1.0 / (rmse_rf_val  + 1e-9)
+    w_ann = 1.0 / (rmse_ann_val + 1e-9)
+    w_total = w_rf + w_ann
+    ens_weighted_ret = (w_rf * rf_ext_ret + w_ann * ann_ext_ret) / w_total
+
+    # --- 방식 C: 스태킹 (Stacking) ---
+    #   Train: RF + ANN val 예측값을 meta-feature로 LinearRegression 학습
+    #   Test:  RF + ANN test 예측값을 meta-feature로 최종 예측
+    from sklearn.linear_model import Ridge
+    meta_X_train = np.column_stack([rf_val_ret, ann_val_ret])
+    meta_y_train = y_val_np
+    meta_model = Ridge(alpha=1.0)
+    meta_model.fit(meta_X_train, meta_y_train)
+    meta_X_test    = np.column_stack([rf_ext_ret, ann_ext_ret])
+    ens_stacking_ret = meta_model.predict(meta_X_test)
+
+    # --- 3가지 방식 val RMSE 비교 → 가장 낮은 방식 자동 선택 ---
+    ens_candidates = {
+        "Ensemble (Simple Avg)"   : ens_simple_ret,
+        "Ensemble (Weighted Avg)" : ens_weighted_ret,
+        "Ensemble (Stacking)"     : ens_stacking_ret,
+    }
+    # val 세트에서 비교 (수익률 기준)
+    val_rf_pred  = rf_ext.predict(X_val_ext)
+    val_ann_pred = predict_ai_model(ann_ext, X_val_ext)
+    ens_val_candidates = {
+        "Ensemble (Simple Avg)"   : (val_rf_pred + val_ann_pred) / 2.0,
+        "Ensemble (Weighted Avg)" : (w_rf * val_rf_pred + w_ann * val_ann_pred) / w_total,
+        "Ensemble (Stacking)"     : meta_model.predict(np.column_stack([val_rf_pred, val_ann_pred])),
+    }
+    best_ens_name = min(
+        ens_val_candidates,
+        key=lambda k: np.sqrt(np.mean((y_val_np - ens_val_candidates[k]) ** 2))
+    )
+    best_ens_ret = ens_candidates[best_ens_name]
+    print(f"  [앙상블 자동 선택] 최적 방식 = {best_ens_name}")
+    print(f"    Simple Avg   val RMSE: {np.sqrt(np.mean((y_val_np - ens_val_candidates['Ensemble (Simple Avg)'])**2)):.6f}")
+    print(f"    Weighted Avg val RMSE: {np.sqrt(np.mean((y_val_np - ens_val_candidates['Ensemble (Weighted Avg)'])**2)):.6f}")
+    print(f"    Stacking     val RMSE: {np.sqrt(np.mean((y_val_np - ens_val_candidates['Ensemble (Stacking)'])**2)):.6f}")
+
+    results_return["Ensemble RF+ANN"] = best_ens_ret
+    results_price["Ensemble RF+ANN"]  = ret_to_price(best_ens_ret)
+
+    # 7. Hybrid Sentiment RF (10 features + NSI_short + NSI_long)
     # NSI 결합 피처 정의
     HYBRID_FEATURES = EXTENDED_FEATURES + ["nsi_short", "nsi_long"]
     # 누락 NSI 100 보정
@@ -290,7 +344,9 @@ def run_comparison_pipeline(name: str, path: str, short_w: dict, long_w: dict, n
     ax.plot(test_dates, results_price["Extended RF"], label=f"Extended RF  (10 features)  RMSE={rmse_dict['Extended RF']:,.0f}", color="royalblue", linestyle="-", linewidth=2.0)
     # 7. Extended ANN
     ax.plot(test_dates, results_price["Extended ANN"], label=f"Extended ANN (10 features)  RMSE={rmse_dict['Extended ANN']:,.0f}", color="forestgreen", linestyle="-", linewidth=2.0)
-    # 8. 최종 Hybrid RF+NSI (두껍고 눈에 띄는 퍼플 실선)
+    # 8. Ensemble RF+ANN (자동 선택된 최적 앙상블)
+    ax.plot(test_dates, results_price["Ensemble RF+ANN"], label=f"Ensemble RF+ANN (best)      RMSE={rmse_dict['Ensemble RF+ANN']:,.0f}", color="deeppink", linestyle="-", linewidth=2.2, zorder=4)
+    # 9. 최종 Hybrid RF+NSI (두껍고 눈에 띄는 퍼플 실선)
     ax.plot(test_dates, results_price["Hybrid RF+NSI"], label=f"Hybrid RF+NSI (12 features) RMSE={rmse_dict['Hybrid RF+NSI']:,.0f}", color="darkviolet", linestyle="-", linewidth=2.5, zorder=4)
 
     ax.set_title(f"Model Predictions Comparison — {name.replace('_', ' ').title()}", fontsize=14, fontweight="bold", pad=14)
