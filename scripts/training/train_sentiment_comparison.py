@@ -116,8 +116,9 @@ for name, path in COMPANIES.items():
     # 1. Benchmark (Naive)
     bench_rmse = np.sqrt(np.mean((y_test_price - today_close)**2))
     bench_mae = np.mean(np.abs(y_test_price - today_close))
+    bench_mape = np.mean(np.abs((y_test_price - today_close) / y_test_price)) * 100
     bench_acc = 0.50
-    all_results.append({"Company": name, "Model": "Benchmark", "RMSE": bench_rmse, "MAE": bench_mae, "Acc": bench_acc})
+    all_results.append({"Company": name, "Model": "Benchmark", "RMSE": bench_rmse, "MAE": bench_mae, "MAPE": bench_mape, "Acc": bench_acc})
     
     # 2. ARIMA
     try:
@@ -125,10 +126,11 @@ for name, path in COMPANIES.items():
         arima_pred = predict_classical_model(arima_fitted, steps=len(test_df))
         arima_rmse = np.sqrt(np.mean((y_test_price - arima_pred)**2))
         arima_mae = np.mean(np.abs(y_test_price - arima_pred))
+        arima_mape = np.mean(np.abs((y_test_price - arima_pred) / y_test_price)) * 100
         arima_acc = direction_accuracy(y_test_price, arima_pred, today_close)
     except Exception as e:
-        arima_rmse, arima_mae, arima_acc = np.nan, np.nan, np.nan
-    all_results.append({"Company": name, "Model": "ARIMA", "RMSE": arima_rmse, "MAE": arima_mae, "Acc": arima_acc})
+        arima_rmse, arima_mae, arima_mape, arima_acc = np.nan, np.nan, np.nan, np.nan
+    all_results.append({"Company": name, "Model": "ARIMA", "RMSE": arima_rmse, "MAE": arima_mae, "MAPE": arima_mape, "Acc": arima_acc})
     
     # 3. Existing RF (Price Only - 7 features)
     scaler_orig = MinMaxScaler()
@@ -138,9 +140,22 @@ for name, path in COMPANIES.items():
     rf_orig_price = today_close * np.exp(rf_orig.predict(X_test_orig))
     rf_orig_rmse = np.sqrt(np.mean((y_test_price - rf_orig_price)**2))
     rf_orig_mae = np.mean(np.abs(y_test_price - rf_orig_price))
+    rf_orig_mape = np.mean(np.abs((y_test_price - rf_orig_price) / y_test_price)) * 100
     rf_orig_acc = direction_accuracy(y_test_price, rf_orig_price, today_close)
-    all_results.append({"Company": name, "Model": "Existing RF", "RMSE": rf_orig_rmse, "MAE": rf_orig_mae, "Acc": rf_orig_acc})
+    all_results.append({"Company": name, "Model": "Existing RF", "RMSE": rf_orig_rmse, "MAE": rf_orig_mae, "MAPE": rf_orig_mape, "Acc": rf_orig_acc})
     
+    # 3.5 Existing ANN (Price Only - 7 features)
+    try:
+        ann_orig_model = train_ann_model(X_train_orig, y_train_r, X_train_orig, y_train_r)
+        ann_orig_pred_price = today_close * np.exp(ann_orig_model.predict(X_test_orig).flatten())
+        ann_orig_rmse = np.sqrt(np.mean((y_test_price - ann_orig_pred_price)**2))
+        ann_orig_mae = np.mean(np.abs(y_test_price - ann_orig_pred_price))
+        ann_orig_mape = np.mean(np.abs((y_test_price - ann_orig_pred_price) / y_test_price)) * 100
+        ann_orig_acc = direction_accuracy(y_test_price, ann_orig_pred_price, today_close)
+    except Exception as e:
+        ann_orig_rmse, ann_orig_mae, ann_orig_mape, ann_orig_acc = np.nan, np.nan, np.nan, np.nan
+    all_results.append({"Company": name, "Model": "Existing ANN", "RMSE": ann_orig_rmse, "MAE": ann_orig_mae, "MAPE": ann_orig_mape, "Acc": ann_orig_acc})
+
     # 4. Extended RF (Price Only - 10 features)
     scaler_ext = MinMaxScaler()
     X_train_ext = scaler_ext.fit_transform(train_df[EXTENDED_FEATURES])
@@ -149,8 +164,9 @@ for name, path in COMPANIES.items():
     rf_ext_price = today_close * np.exp(rf_ext.predict(X_test_ext))
     rf_ext_rmse = np.sqrt(np.mean((y_test_price - rf_ext_price)**2))
     rf_ext_mae = np.mean(np.abs(y_test_price - rf_ext_price))
+    rf_ext_mape = np.mean(np.abs((y_test_price - rf_ext_price) / y_test_price)) * 100
     rf_ext_acc = direction_accuracy(y_test_price, rf_ext_price, today_close)
-    all_results.append({"Company": name, "Model": "Extended RF", "RMSE": rf_ext_rmse, "MAE": rf_ext_mae, "Acc": rf_ext_acc})
+    all_results.append({"Company": name, "Model": "Extended RF", "RMSE": rf_ext_rmse, "MAE": rf_ext_mae, "MAPE": rf_ext_mape, "Acc": rf_ext_acc})
     
     # 5. Extended ANN (Price Only - 10 features)
     try:
@@ -158,10 +174,11 @@ for name, path in COMPANIES.items():
         ann_pred_price = today_close * np.exp(ann_model.predict(X_test_ext).flatten())
         ann_rmse = np.sqrt(np.mean((y_test_price - ann_pred_price)**2))
         ann_mae = np.mean(np.abs(y_test_price - ann_pred_price))
+        ann_mape = np.mean(np.abs((y_test_price - ann_pred_price) / y_test_price)) * 100
         ann_acc = direction_accuracy(y_test_price, ann_pred_price, today_close)
     except Exception as e:
-        ann_rmse, ann_mae, ann_acc = np.nan, np.nan, np.nan
-    all_results.append({"Company": name, "Model": "Extended ANN", "RMSE": ann_rmse, "MAE": ann_mae, "Acc": ann_acc})
+        ann_rmse, ann_mae, ann_mape, ann_acc = np.nan, np.nan, np.nan, np.nan
+    all_results.append({"Company": name, "Model": "Extended ANN", "RMSE": ann_rmse, "MAE": ann_mae, "MAPE": ann_mape, "Acc": ann_acc})
     
     # 6. Linear Regression (Sentiment Only - K-NSI 2 features)
     scaler_nsi = MinMaxScaler()
@@ -171,8 +188,9 @@ for name, path in COMPANIES.items():
     lr_nsi_price = today_close * np.exp(lr_nsi.predict(X_test_nsi))
     lr_nsi_rmse = np.sqrt(np.mean((y_test_price - lr_nsi_price)**2))
     lr_nsi_mae = np.mean(np.abs(y_test_price - lr_nsi_price))
+    lr_nsi_mape = np.mean(np.abs((y_test_price - lr_nsi_price) / y_test_price)) * 100
     lr_nsi_acc = direction_accuracy(y_test_price, lr_nsi_price, today_close)
-    all_results.append({"Company": name, "Model": "Sentiment Only (LR)", "RMSE": lr_nsi_rmse, "MAE": lr_nsi_mae, "Acc": lr_nsi_acc})
+    all_results.append({"Company": name, "Model": "Sentiment Only (LR)", "RMSE": lr_nsi_rmse, "MAE": lr_nsi_mae, "MAPE": lr_nsi_mape, "Acc": lr_nsi_acc})
     
     print(f"[{name}] 완료. 데이터: {len(matched_df)}일")
     

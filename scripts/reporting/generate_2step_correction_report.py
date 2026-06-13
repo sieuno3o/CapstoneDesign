@@ -20,14 +20,14 @@ ANALYSIS_SECTION = """
             <li><strong>삼성전자</strong>: 심리 지수 반영 시 RMSE/MAE 증가, R² 및 방향 정확도 감소. 대형주는 글로벌 자금 흐름과 패시브 자금 영향이 더 크며, 뉴스 심리는 노이즈로 작용할 수 있습니다.</li>
             <li><strong>SK하이닉스</strong>: R²가 0에 가까워졌으나 ANN의 방향 정확도는 40%에서 53.3%로 개선되었습니다. K-NSI는 방향성을 잡는 데 긍정적인 역할을 한 것으로 해석됩니다.</li>
             <li><strong>원익IPS</strong>: RF/ANN 모두 RMSE, MAE, MAPE 개선. 방향 정확도는 최대 60%까지 상승했고 R²도 개선되었습니다. 장비주는 전방 산업 뉴스와 심리 변화에 민감하게 반응합니다.</li>
-            <li><strong>동진쎄미켐</strong>: Baseline이 이미 우수하여 심리 지수 반영 후 오차가 소폭 증가했습니다. 기업 고유의 기술적 요인이 더 큰 영향을 미쳤을 가능성이 있습니다.</li>
+            <li><strong>동진쎄미켐</strong>: 기존 가격 모델(Extended RF)이 이미 우수하여 심리 지수 반영 후 오차가 소폭 증가했습니다. 기업 고유의 기술적 요인이 더 큰 영향을 미쳤을 가능성이 있습니다.</li>
         </ul>
         <h4>2. 방위산업 기업군 분석</h4>
         <ul>
             <li><strong>한화에어로스페이스</strong>: RF 모델에서 RMSE, MAE 감소, R²이 0.37에서 0.49로 상승, 방향 정확도 60% 개선. 지정학적 리스크 뉴스가 주가에 직결된다고 볼 수 있습니다.</li>
-            <li><strong>LIG넥스원</strong>: Baseline RF RMSE가 약 11만에서 7.4만으로 크게 감소, R²도 음수에서 양수로 개선되었습니다. K-NSI가 대외 리스크 역할을 했습니다.</li>
+            <li><strong>LIG넥스원</strong>: 기존 Extended RF RMSE가 약 11만에서 7.4만으로 크게 감소, R²도 음수에서 양수로 개선되었습니다. K-NSI가 대외 리스크 역할을 했습니다.</li>
             <li><strong>SNT다이나믹스</strong>: 모든 오차 지표가 최저 수준으로 떨어지고 방향 정확도가 86.6%/80%에 근접, R² 0.63까지 상승. 뉴스 심리에 가장 강하게 반응한 기업입니다.</li>
-            <li><strong>퍼스텍</strong>: Baseline 모델의 R²가 이미 매우 높아 심리 지수 추가 시 오차가 증가했습니다. 소형 테마주는 기술적 변수와 수급이 더 중요할 수 있습니다.</li>
+            <li><strong>퍼스텍</strong>: 기존 모델의 R²가 이미 매우 높아 심리 지수 추가 시 오차가 증가했습니다. 소형 테마주는 기술적 변수와 수급이 더 중요할 수 있습니다.</li>
         </ul>
         <h4>결론 요약</h4>
         <ol>
@@ -148,13 +148,13 @@ HTML_TEMPLATE = Template("""<!DOCTYPE html>
 <div class="container">
     <header>
         <div class="badge">Final Model Report</div>
-        <h1>2-Step Psychological Correction 결과 보고서</h1>
-        <p>이 보고서는 <strong>train_2step_correction.py</strong> 실행 결과로 생성된 지표와 그림을 기반으로 작성되었습니다. 각 기업별 baseline 모델과 correction 모델의 성능을 한눈에 확인할 수 있습니다.</p>
+        <h1>Benchmark + 심리지수 결합 모델 분석 보고서</h1>
+        <p>이 보고서는 <strong>train_2step_correction.py</strong> 실행 결과로 생성된 지표와 그림을 기반으로 작성되었습니다. 각 기업별 기존 가격 모델(Extended)과 심리지수 결합 보정 모델의 성능을 한눈에 확인할 수 있습니다.</p>
     </header>
 
     <section class="card">
         <div class="section-title"><span></span><h3>전체 요약</h3></div>
-        <p>Baseline RF/ANN 예측과 correction 이후 모델의 RMSE 개선 여부를 중심으로 성능을 비교합니다.</p>
+        <p>기존 Benchmark 예측과 심리지수 결합 보정 모델의 RMSE 개선 여부를 중심으로 성능을 비교합니다.</p>
         <div class="summary-grid">
             <div class="summary-card"><strong>대상 기업 수</strong><span>$company_count</span></div>
             <div class="summary-card"><strong>평균 RMSE 개선률</strong><span>$avg_rmse_improvement%</span></div>
@@ -162,7 +162,7 @@ HTML_TEMPLATE = Template("""<!DOCTYPE html>
         </div>
         <div class="figure-card">
             <img src="$summary_image" alt="2-Step Correction RMSE Summary">
-            <div class="image-caption">Baseline과 Corrected 모델의 RMSE 비교 요약</div>
+            <div class="image-caption">기존 모델과 심리지수 결합 보정 모델의 RMSE 비교 요약</div>
         </div>
     </section>
 
@@ -180,6 +180,8 @@ HTML_TEMPLATE = Template("""<!DOCTYPE html>
 """)
 
 
+MODEL_MAPPING = {}
+
 def format_metric(value):
     if pd.isna(value):
         return "-"
@@ -192,8 +194,9 @@ def build_summary_table(df: pd.DataFrame) -> str:
     header = "<table class=\"metric-table\"><thead><tr><th>Company</th><th>Model</th><th>RMSE</th><th>MAE</th><th>MAPE</th><th>MBE</th><th>R²</th><th>Directional Accuracy</th></tr></thead><tbody>"
     rows = []
     for _, row in df.iterrows():
+        model_name = MODEL_MAPPING.get(row['Model'], row['Model'])
         rows.append(
-            f"<tr><td>{row['Company']}</td><td>{row['Model']}</td><td>{format_metric(row['rmse'])}</td><td>{format_metric(row['mae'])}</td><td>{format_metric(row['mape'])}</td><td>{format_metric(row['mbe'])}</td><td>{format_metric(row['r2'])}</td><td>{format_metric(row['direction_accuracy'])}</td></tr>"
+            f"<tr><td>{row['Company']}</td><td>{model_name}</td><td>{format_metric(row['rmse'])}</td><td>{format_metric(row['mae'])}</td><td>{format_metric(row['mape'])}</td><td>{format_metric(row['mbe'])}</td><td>{format_metric(row['r2'])}</td><td>{format_metric(row['direction_accuracy'])}</td></tr>"
         )
     footer = "</tbody></table>"
     return header + "".join(rows) + footer
@@ -206,7 +209,7 @@ def build_company_section(df: pd.DataFrame, company: str) -> str:
 
     section = [
         f"<section class=\"card\"><div class=\"section-title\"><span></span><h3>{company.replace('_', ' ').title()}</h3></div>",
-        "<p>Baseline과 Corrected 모델의 가격 예측 성능을 비교한 기업별 상세 결과입니다.</p>",
+        "<p>기존 가격 모델과 심리지수 결합 보정 모델의 가격 예측 성능을 비교한 기업별 상세 결과입니다.</p>",
         "<div class=\"figure-card\">"
     ]
 
@@ -218,8 +221,9 @@ def build_company_section(df: pd.DataFrame, company: str) -> str:
 
     section.append("<table class=\"metric-table\"><thead><tr><th>Model</th><th>RMSE</th><th>MAE</th><th>MAPE</th><th>MBE</th><th>R²</th><th>Directional Accuracy</th></tr></thead><tbody>")
     for _, row in subset.iterrows():
+        model_name = MODEL_MAPPING.get(row['Model'], row['Model'])
         section.append(
-            f"<tr><td>{row['Model']}</td><td>{format_metric(row['rmse'])}</td><td>{format_metric(row['mae'])}</td><td>{format_metric(row['mape'])}</td><td>{format_metric(row['mbe'])}</td><td>{format_metric(row['r2'])}</td><td>{format_metric(row['direction_accuracy'])}</td></tr>"
+            f"<tr><td>{model_name}</td><td>{format_metric(row['rmse'])}</td><td>{format_metric(row['mae'])}</td><td>{format_metric(row['mape'])}</td><td>{format_metric(row['mbe'])}</td><td>{format_metric(row['r2'])}</td><td>{format_metric(row['direction_accuracy'])}</td></tr>"
         )
     section.append("</tbody></table>")
     section.append("</section>")
@@ -232,8 +236,8 @@ def main():
     df['Model'] = df['Model'].astype(str)
 
     company_count = df['Company'].nunique()
-    baseline_rmse = df[df['Model'].isin(['Baseline RF', 'Baseline ANN'])].groupby('Company')['rmse'].mean()
-    corrected_rmse = df[df['Model'].isin(['Corrected RF', 'Corrected ANN'])].groupby('Company')['rmse'].mean()
+    baseline_rmse = df[df['Model'] == 'Benchmark'].groupby('Company')['rmse'].mean()
+    corrected_rmse = df[df['Model'] == 'Benchmark + 심리지수 결합모델'].groupby('Company')['rmse'].mean()
     avg_rmse_improvement = ((baseline_rmse - corrected_rmse) / baseline_rmse * 100).mean()
     image_count = sum((FIGURES_DIR / f"{company}_2step_correction.png").exists() for company in df['Company'].unique())
 

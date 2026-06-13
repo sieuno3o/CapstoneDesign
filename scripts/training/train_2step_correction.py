@@ -27,12 +27,21 @@ from src.feature_engineering import (
 )
 from src.feature_engineering_extended import add_extended_features
 from src.ai_model import train_ann_model, predict_ai_model
+from src.classical_model import train_classical_model, predict_classical_model
 
 # ── 한글 폰트 설정 ──────────────────────────────────────────────────────────
-_korean_fonts = [f.name for f in fm.fontManager.ttflist if "Gothic" in f.name or "Nanum" in f.name or "Apple" in f.name]
-if _korean_fonts:
-    matplotlib.rc("font", family=_korean_fonts[0])
-matplotlib.rcParams["axes.unicode_minus"] = False
+plt.rcParams['font.family'] = 'Malgun Gothic'
+plt.rcParams['axes.unicode_minus'] = False
+
+ORIGINAL_FEATURES = [
+    "Volume",
+    "ma_7",
+    "ma_14",
+    "ma_21",
+    "volatility_7",
+    "hl_diff",
+    "oc_diff"
+]
 
 EXTENDED_FEATURES = [
     "MA_3",
@@ -124,38 +133,50 @@ def load_final_input(path: str) -> pd.DataFrame:
 
 
 def train_baseline_models(train_df: pd.DataFrame):
-    X_train = train_df[EXTENDED_FEATURES].values
     y_train = train_df[TARGET_COL].values
 
-    scaler = MinMaxScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
+    # Existing RF (7 features)
+    X_train_rf_orig = train_df[ORIGINAL_FEATURES].values
+    scaler_rf_orig = MinMaxScaler()
+    X_train_rf_orig_scaled = scaler_rf_orig.fit_transform(X_train_rf_orig)
+    rf_orig = RandomForestRegressor(n_estimators=200, random_state=42)
+    rf_orig.fit(X_train_rf_orig_scaled, y_train)
 
-    rf_model = RandomForestRegressor(n_estimators=200, random_state=42)
-    rf_model.fit(X_train_scaled, y_train)
-
-    val_split = max(int(len(X_train_scaled) * 0.85), 1)
-    X_ann_train = X_train_scaled[:val_split]
-    y_ann_train = y_train[:val_split]
-    X_ann_val = X_train_scaled[val_split:]
-    y_ann_val = y_train[val_split:]
-
-    ann_model = train_ann_model(
-        X_ann_train,
-        y_ann_train,
-        X_val=X_ann_val if len(X_ann_val) > 0 else None,
-        y_val=y_ann_val if len(y_ann_val) > 0 else None,
+    # Existing ANN (7 features)
+    val_split_orig = max(int(len(X_train_rf_orig_scaled) * 0.85), 1)
+    ann_orig = train_ann_model(
+        X_train_rf_orig_scaled[:val_split_orig],
+        y_train[:val_split_orig],
+        X_val=X_train_rf_orig_scaled[val_split_orig:] if len(X_train_rf_orig_scaled[val_split_orig:]) > 0 else None,
+        y_val=y_train[val_split_orig:] if len(y_train[val_split_orig:]) > 0 else None,
     )
 
-    return rf_model, ann_model, scaler
+    # Extended RF (10 features)
+    X_train_rf_ext = train_df[EXTENDED_FEATURES].values
+    scaler_rf_ext = MinMaxScaler()
+    X_train_rf_ext_scaled = scaler_rf_ext.fit_transform(X_train_rf_ext)
+    rf_ext = RandomForestRegressor(n_estimators=200, random_state=42)
+    rf_ext.fit(X_train_rf_ext_scaled, y_train)
+
+    # Extended ANN (10 features)
+    val_split_ext = max(int(len(X_train_rf_ext_scaled) * 0.85), 1)
+    ann_ext = train_ann_model(
+        X_train_rf_ext_scaled[:val_split_ext],
+        y_train[:val_split_ext],
+        X_val=X_train_rf_ext_scaled[val_split_ext:] if len(X_train_rf_ext_scaled[val_split_ext:]) > 0 else None,
+        y_val=y_train[val_split_ext:] if len(y_train[val_split_ext:]) > 0 else None,
+    )
+
+    return rf_orig, scaler_rf_orig, ann_orig, rf_ext, scaler_rf_ext, ann_ext
 
 
-def predict_baseline_price(model, scaler, df: pd.DataFrame):
-    X = scaler.transform(df[EXTENDED_FEATURES].values)
+def predict_baseline_price(model, scaler, df: pd.DataFrame, features_list):
+    X = scaler.transform(df[features_list].values)
     y_pred_return = model.predict(X)
     y_pred_return = np.asarray(y_pred_return)
     if y_pred_return.ndim > 1:
         y_pred_return = y_pred_return.ravel()
-    return df["Close"].values * (1 + y_pred_return)
+    return df["Close"].values * np.exp(y_pred_return)
 
 
 def train_correction_model(pred_price: np.ndarray, k_short: np.ndarray, k_long: np.ndarray, y_true: np.ndarray):
@@ -184,11 +205,22 @@ def run_two_step_for_stock(stock_name: str, stock_path: str, final_input: pd.Dat
     if len(train_df) < 50:
         raise ValueError(f"{stock_name}의 baseline 학습 데이터가 부족합니다. 행 개수: {len(train_df)}")
 
-    rf_model, ann_model, scaler = train_baseline_models(train_df)
+    rf_orig, scaler_rf_orig, ann_orig, rf_ext, scaler_rf_ext, ann_ext = train_baseline_models(train_df)
 
     df_test = df_test.sort_values("Date").reset_index(drop=True)
-    df_test["rf_baseline_price"] = predict_baseline_price(rf_model, scaler, df_test)
-    df_test["ann_baseline_price"] = predict_baseline_price(ann_model, scaler, df_test)
+    df_test["rf_orig_price"] = predict_baseline_price(rf_orig, scaler_rf_orig, df_test, ORIGINAL_FEATURES)
+    df_test["rf_ext_price"] = predict_baseline_price(rf_ext, scaler_rf_ext, df_test, EXTENDED_FEATURES)
+    df_test["ann_orig_price"] = predict_baseline_price(ann_orig, scaler_rf_orig, df_test, ORIGINAL_FEATURES)
+    df_test["ann_ext_price"] = predict_baseline_price(ann_ext, scaler_rf_ext, df_test, EXTENDED_FEATURES)
+
+    # ARIMA Baseline 예측
+    try:
+        arima_fitted = train_classical_model(train_df["Close"])
+        arima_pred_prices = predict_classical_model(arima_fitted, steps=len(df_test))
+        df_test["arima_baseline_price"] = np.asarray(arima_pred_prices)
+    except Exception as e:
+        print(f"[경고] {stock_name} ARIMA 학습 실패: {e}")
+        df_test["arima_baseline_price"] = df_test["Close"].values
 
     # 최근 2달 검증 구간 내부에서 correction train / eval split
     split_index = max(int(len(df_test) * 0.6), 1)
@@ -200,78 +232,157 @@ def run_two_step_for_stock(stock_name: str, stock_path: str, final_input: pd.Dat
 
     y_eval = correction_eval[TARGET_PRICE_COL].values
 
-    rf_corr_model = train_correction_model(
-        correction_train["rf_baseline_price"].values,
+    # --- 8번 모델: Benchmark + 심리지수 결합모델 (선형 회귀 보정) ---
+    bench_corr_model = train_correction_model(
+        correction_train["Close"].values,
         correction_train["K_NSI_Short"].values,
         correction_train["K_NSI_Long"].values,
         correction_train[TARGET_PRICE_COL].values,
     )
-    ann_corr_model = train_correction_model(
-        correction_train["ann_baseline_price"].values,
-        correction_train["K_NSI_Short"].values,
-        correction_train["K_NSI_Long"].values,
-        correction_train[TARGET_PRICE_COL].values,
-    )
-
-    rf_eval_pred = rf_corr_model.predict(
+    bench_eval_pred = bench_corr_model.predict(
         np.column_stack([
-            correction_eval["rf_baseline_price"].values,
+            correction_eval["Close"].values,
             correction_eval["K_NSI_Short"].values,
             correction_eval["K_NSI_Long"].values,
         ])
     )
+    bench_baseline_eval = correction_eval["Close"].values
 
-    ann_eval_pred = ann_corr_model.predict(
-        np.column_stack([
-            correction_eval["ann_baseline_price"].values,
-            correction_eval["K_NSI_Short"].values,
-            correction_eval["K_NSI_Long"].values,
-        ])
-    )
+    rf_orig_eval = correction_eval["rf_orig_price"].values
+    rf_ext_eval = correction_eval["rf_ext_price"].values
+    ann_orig_eval = correction_eval["ann_orig_price"].values
+    ann_ext_eval = correction_eval["ann_ext_price"].values
+    arima_baseline_eval = correction_eval["arima_baseline_price"].values
 
-    rf_baseline_eval = correction_eval["rf_baseline_price"].values
-    ann_baseline_eval = correction_eval["ann_baseline_price"].values
+    # --- ARIMA + 심리지수 결합모델 (선형 회귀 보정) ---
+    try:
+        arima_corr_model = train_correction_model(
+            correction_train["arima_baseline_price"].values,
+            correction_train["K_NSI_Short"].values,
+            correction_train["K_NSI_Long"].values,
+            correction_train[TARGET_PRICE_COL].values,
+        )
+        arima_eval_pred = arima_corr_model.predict(
+            np.column_stack([
+                correction_eval["arima_baseline_price"].values,
+                correction_eval["K_NSI_Short"].values,
+                correction_eval["K_NSI_Long"].values,
+            ])
+        )
+    except Exception as e:
+        print(f"[경고] {stock_name} ARIMA 보정 모델 학습 실패: {e}")
+        arima_eval_pred = arima_baseline_eval
+
+    # --- Existing RF + 심리지수 결합모델 (선형 회귀 보정) ---
+    try:
+        rf_orig_corr_model = train_correction_model(
+            correction_train["rf_orig_price"].values,
+            correction_train["K_NSI_Short"].values,
+            correction_train["K_NSI_Long"].values,
+            correction_train[TARGET_PRICE_COL].values,
+        )
+        rf_orig_eval_pred = rf_orig_corr_model.predict(
+            np.column_stack([
+                correction_eval["rf_orig_price"].values,
+                correction_eval["K_NSI_Short"].values,
+                correction_eval["K_NSI_Long"].values,
+            ])
+        )
+    except Exception as e:
+        print(f"[경고] {stock_name} Existing RF 보정 모델 학습 실패: {e}")
+        rf_orig_eval_pred = rf_orig_eval
+
+    # --- Existing ANN + 심리지수 결합모델 (선형 회귀 보정) ---
+    try:
+        ann_orig_corr_model = train_correction_model(
+            correction_train["ann_orig_price"].values,
+            correction_train["K_NSI_Short"].values,
+            correction_train["K_NSI_Long"].values,
+            correction_train[TARGET_PRICE_COL].values,
+        )
+        ann_orig_eval_pred = ann_orig_corr_model.predict(
+            np.column_stack([
+                correction_eval["ann_orig_price"].values,
+                correction_eval["K_NSI_Short"].values,
+                correction_eval["K_NSI_Long"].values,
+            ])
+        )
+    except Exception as e:
+        print(f"[경고] {stock_name} Existing ANN 보정 모델 학습 실패: {e}")
+        ann_orig_eval_pred = ann_orig_eval
 
     eval_date_index = correction_eval["Date"].dt.strftime("%Y-%m-%d")
 
     metrics = []
-    metrics.append({"Company": stock_name, "Model": "Baseline RF", **evaluate_regression(y_eval, rf_baseline_eval)})
-    metrics.append({"Company": stock_name, "Model": "Corrected RF", **evaluate_regression(y_eval, rf_eval_pred)})
-    metrics.append({"Company": stock_name, "Model": "Baseline ANN", **evaluate_regression(y_eval, ann_baseline_eval)})
-    metrics.append({"Company": stock_name, "Model": "Corrected ANN", **evaluate_regression(y_eval, ann_eval_pred)})
+    metrics.append({"Company": stock_name, "Model": "Benchmark", **evaluate_regression(y_eval, bench_baseline_eval)})
+    metrics.append({"Company": stock_name, "Model": "Benchmark + 심리지수 결합모델", **evaluate_regression(y_eval, bench_eval_pred)})
+    metrics.append({"Company": stock_name, "Model": "ARIMA", **evaluate_regression(y_eval, arima_baseline_eval)})
+    metrics.append({"Company": stock_name, "Model": "ARIMA + 심리지수 결합모델", **evaluate_regression(y_eval, arima_eval_pred)})
+    metrics.append({"Company": stock_name, "Model": "Existing RF", **evaluate_regression(y_eval, rf_orig_eval)})
+    metrics.append({"Company": stock_name, "Model": "Existing RF + 심리지수 결합모델", **evaluate_regression(y_eval, rf_orig_eval_pred)})
+    metrics.append({"Company": stock_name, "Model": "Extended RF", **evaluate_regression(y_eval, rf_ext_eval)})
+    metrics.append({"Company": stock_name, "Model": "Existing ANN", **evaluate_regression(y_eval, ann_orig_eval)})
+    metrics.append({"Company": stock_name, "Model": "Existing ANN + 심리지수 결합모델", **evaluate_regression(y_eval, ann_orig_eval_pred)})
+    metrics.append({"Company": stock_name, "Model": "Extended ANN", **evaluate_regression(y_eval, ann_ext_eval)})
 
     df_metrics = pd.DataFrame(metrics)
     metrics_path = METRICS_DIR / f"{stock_name}_2step_correction_metrics.csv"
     df_metrics.to_csv(metrics_path, index=False, encoding="utf-8-sig")
     print(f"[저장] {metrics_path}")
 
-    # 시각화
-    fig, axes = plt.subplots(3, 1, figsize=(14, 16), dpi=120)
+    # 시각화 (5단 구성으로 변경)
+    fig, axes = plt.subplots(5, 1, figsize=(14, 28), dpi=120)
+    
+    # 0. Benchmark vs Corrected
     axes[0].plot(eval_date_index, y_eval, label="Actual Close", color="black", linewidth=2.5)
-    axes[0].plot(eval_date_index, rf_baseline_eval, label="Baseline RF", color="royalblue", linestyle="--")
-    axes[0].plot(eval_date_index, rf_eval_pred, label="Corrected RF", color="forestgreen", linestyle="-")
-    axes[0].set_title(f"{stock_name} - RF Baseline vs Corrected")
+    axes[0].plot(eval_date_index, bench_baseline_eval, label="Benchmark", color="dimgray", linestyle="--")
+    axes[0].plot(eval_date_index, bench_eval_pred, label="Benchmark + 심리지수 결합모델", color="purple", linestyle="-")
+    axes[0].set_title(f"{stock_name} - Benchmark vs Benchmark + 심리지수 결합모델")
     axes[0].set_ylabel("Price (KRW)")
     axes[0].legend()
     axes[0].grid(True, alpha=0.3)
 
+    # 1. ARIMA vs Corrected
     axes[1].plot(eval_date_index, y_eval, label="Actual Close", color="black", linewidth=2.5)
-    axes[1].plot(eval_date_index, ann_baseline_eval, label="Baseline ANN", color="darkorange", linestyle="--")
-    axes[1].plot(eval_date_index, ann_eval_pred, label="Corrected ANN", color="purple", linestyle="-")
-    axes[1].set_title(f"{stock_name} - ANN Baseline vs Corrected")
+    axes[1].plot(eval_date_index, arima_baseline_eval, label="ARIMA", color="teal", linestyle="--")
+    axes[1].plot(eval_date_index, arima_eval_pred, label="ARIMA + 심리지수 결합모델", color="orchid", linestyle="-")
+    axes[1].set_title(f"{stock_name} - ARIMA vs ARIMA + 심리지수 결합모델")
     axes[1].set_ylabel("Price (KRW)")
     axes[1].legend()
     axes[1].grid(True, alpha=0.3)
 
-    bar_df = df_metrics.pivot(index="Company", columns="Model", values="rmse").reset_index()
-    bar_names = ["Baseline RF", "Corrected RF", "Baseline ANN", "Corrected ANN"]
+    # 2. RF Models
+    axes[2].plot(eval_date_index, y_eval, label="Actual Close", color="black", linewidth=2.5)
+    axes[2].plot(eval_date_index, rf_orig_eval, label="Existing RF", color="royalblue", linestyle="--")
+    axes[2].plot(eval_date_index, rf_orig_eval_pred, label="Existing RF + 심리지수 결합모델", color="forestgreen", linestyle="-")
+    axes[2].set_title(f"{stock_name} - Existing RF vs Existing RF + 심리지수 결합모델")
+    axes[2].set_ylabel("Price (KRW)")
+    axes[2].legend()
+    axes[2].grid(True, alpha=0.3)
+
+    # 3. ANN Models
+    axes[3].plot(eval_date_index, y_eval, label="Actual Close", color="black", linewidth=2.5)
+    axes[3].plot(eval_date_index, ann_orig_eval, label="Existing ANN", color="darkorange", linestyle="--")
+    axes[3].plot(eval_date_index, ann_orig_eval_pred, label="Existing ANN + 심리지수 결합모델", color="chocolate", linestyle="-")
+    axes[3].set_title(f"{stock_name} - Existing ANN vs Existing ANN + 심리지수 결합모델")
+    axes[3].set_ylabel("Price (KRW)")
+    axes[3].legend()
+    axes[3].grid(True, alpha=0.3)
+
+    # 4. RMSE Comparison
+    bar_names = [
+        "Benchmark", "Benchmark + 심리지수 결합모델",
+        "ARIMA", "ARIMA + 심리지수 결합모델",
+        "Existing RF", "Existing RF + 심리지수 결합모델",
+        "Extended RF", "Existing ANN", "Existing ANN + 심리지수 결합모델", "Extended ANN"
+    ]
     bar_values = [df_metrics.loc[df_metrics["Model"] == name, "rmse"].values[0] for name in bar_names]
-    axes[2].bar(bar_names, bar_values, color=["royalblue", "forestgreen", "darkorange", "purple"])
-    axes[2].set_title(f"{stock_name} - RMSE Comparison")
-    axes[2].set_ylabel("RMSE (KRW)")
+    axes[4].bar(bar_names, bar_values, color=["dimgray", "purple", "teal", "orchid", "royalblue", "forestgreen", "darkgreen", "darkorange", "chocolate", "crimson"])
+    axes[4].set_title(f"{stock_name} - RMSE Comparison")
+    axes[4].set_ylabel("RMSE (KRW)")
     for i, val in enumerate(bar_values):
-        axes[2].text(i, val + max(bar_values) * 0.01, f"{val:,.0f}", ha="center", va="bottom", fontsize=10)
-    axes[2].grid(True, axis="y", alpha=0.3)
+        axes[4].text(i, val + max(bar_values) * 0.01, f"{val:,.0f}", ha="center", va="bottom", fontsize=10)
+    axes[4].grid(True, axis="y", alpha=0.3)
 
     fig.autofmt_xdate(rotation=25)
     fig.tight_layout()
@@ -285,10 +396,15 @@ def run_two_step_for_stock(stock_name: str, stock_path: str, final_input: pd.Dat
 
 def plot_rmse_summary(df_summary: pd.DataFrame):
     pivot = df_summary.pivot(index="Company", columns="Model", values="rmse")
-    pivot = pivot[["Baseline RF", "Corrected RF", "Baseline ANN", "Corrected ANN"]]
+    pivot = pivot[[
+        "Benchmark", "Benchmark + 심리지수 결합모델",
+        "ARIMA", "ARIMA + 심리지수 결합모델",
+        "Existing RF", "Existing RF + 심리지수 결합모델",
+        "Extended RF", "Existing ANN", "Existing ANN + 심리지수 결합모델", "Extended ANN"
+    ]]
 
     fig, ax = plt.subplots(figsize=(14, 8), dpi=120)
-    pivot.plot(kind="bar", ax=ax, color=["royalblue", "forestgreen", "darkorange", "purple"], width=0.82)
+    pivot.plot(kind="bar", ax=ax, color=["dimgray", "purple", "teal", "orchid", "royalblue", "forestgreen", "darkgreen", "darkorange", "chocolate", "crimson"], width=0.85)
     ax.set_title("2-Step Correction RMSE Comparison Across Stocks")
     ax.set_ylabel("RMSE (KRW)")
     ax.set_xlabel("Company")
