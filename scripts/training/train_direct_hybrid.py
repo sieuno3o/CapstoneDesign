@@ -3,6 +3,7 @@ from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 BASE_DIR = Path(__file__).resolve().parents[2]
+import base64
 import os
 import numpy as np
 import pandas as pd
@@ -19,11 +20,21 @@ from src.preprocess import add_return_features, add_target_next_close, add_targe
 from src.feature_engineering import add_moving_averages, add_volatility, add_price_structure_features
 from src.feature_engineering_extended import add_extended_features
 from src.ai_model import train_ann_model, predict_ai_model
+from src.classical_model import train_classical_model, predict_classical_model
 
 # ── 한글 폰트 설정 ──────────────────────────────────────────────────────────
-_korean_fonts = [f.name for f in fm.fontManager.ttflist if "Gothic" in f.name or "Nanum" in f.name or "Apple" in f.name]
-if _korean_fonts:
-    matplotlib.rc("font", family=_korean_fonts[0])
+_korean_fonts = [
+    "AppleGothic",
+    "Apple SD Gothic Neo",
+    "Nanum Gothic",
+    "Noto Sans CJK KR",
+    "Malgun Gothic",
+]
+_available_fonts = {f.name for f in fm.fontManager.ttflist}
+for _font in _korean_fonts:
+    if _font in _available_fonts:
+        matplotlib.rc("font", family=_font)
+        break
 matplotlib.rcParams["axes.unicode_minus"] = False
 
 # ── 피처 정의 ───────────────────────────────────────────────────────────────
@@ -113,6 +124,20 @@ def calc_nsi(news_indexed, weights):
     nsi = (((p_sum - n_sum) / (p_sum + n_sum + 1.0)) * 100.0 + 100.0)
     return nsi.rolling(window=7, min_periods=1).mean()
 
+
+def split_train_validation(X, y, val_ratio=0.15):
+    split_idx = int(len(X) * (1 - val_ratio))
+    split_idx = min(max(split_idx, 1), len(X) - 1)
+    return X[:split_idx], y[:split_idx], X[split_idx:], y[split_idx:]
+
+
+def image_to_data_uri(path: Path) -> str:
+    if not path.exists():
+        print(f"[경고] 이미지 파일이 없습니다: {path}")
+        return ""
+    encoded = base64.b64encode(path.read_bytes()).decode("utf-8")
+    return f"data:image/png;base64,{encoded}"
+
 # ── 종목별 직접 결합 모델 학습 및 평가 ─────────────────────────────────────────
 def run_direct_hybrid_for_stock(stock_name: str, stock_path: str, news_df: pd.DataFrame):
     print("=" * 80)
@@ -141,8 +166,8 @@ def run_direct_hybrid_for_stock(stock_name: str, stock_path: str, news_df: pd.Da
     
     # 시계열 70/30 분할 (Train/Test)
     split_idx = int(len(matched_df) * 0.7)
-    train_df = matched_df.iloc[:split_idx]
-    test_df = matched_df.iloc[split_idx:]
+    train_df = matched_df.iloc[:split_idx].copy()
+    test_df = matched_df.iloc[split_idx:].copy()
     
     y_train_r = train_df[TARGET_COL].values
     today_close = test_df["Close"].values
@@ -161,27 +186,50 @@ def run_direct_hybrid_for_stock(stock_name: str, stock_path: str, news_df: pd.Da
     # ── 베이스라인 예측 ──
     # 1. Benchmark (Naive)
     bench_price = today_close.copy()
+
+    # 2. ARIMA
+    try:
+        arima_fitted = train_classical_model(train_df["Close"])
+        arima_price = predict_classical_model(arima_fitted, steps=len(test_df))
+        arima_price = np.asarray(arima_price, dtype=float)
+        if len(arima_price) != len(test_df) or np.isnan(arima_price).any():
+            raise ValueError("ARIMA forecast produced invalid values.")
+    except Exception as e:
+        print(f"[경고] {stock_name} ARIMA 학습 실패: {e}")
+        arima_price = bench_price.copy()
     
-    # 2. Extended RF
+    # 3. Extended RF
     rf_ext = RandomForestRegressor(n_estimators=200, random_state=42)
     rf_ext.fit(X_train_ext, y_train_r)
     rf_ext_ret = rf_ext.predict(X_test_ext)
     rf_ext_price = today_close * (1 + rf_ext_ret)
     
-    # 3. Extended ANN
-    ann_ext = train_ann_model(X_train_ext, y_train_r, X_train_ext, y_train_r)
+    # 4. Extended ANN
+    X_train_ext_model, y_train_ext_model, X_val_ext, y_val_ext = split_train_validation(X_train_ext, y_train_r)
+    ann_ext = train_ann_model(
+        X_train_ext_model,
+        y_train_ext_model,
+        X_val=X_val_ext,
+        y_val=y_val_ext,
+    )
     ann_ext_ret = predict_ai_model(ann_ext, X_test_ext)
     ann_ext_price = today_close * (1 + ann_ext_ret)
     
     # ── 직접 결합 모델 (Models 14-15) ──
-    # 4. Direct Hybrid RF (결정변수 + 심리변수 12개 RF)
+    # 5. Direct Hybrid RF (결정변수 + 심리변수 12개 RF)
     rf_hyb = RandomForestRegressor(n_estimators=200, random_state=42)
     rf_hyb.fit(X_train_hyb, y_train_r)
     rf_hyb_ret = rf_hyb.predict(X_test_hyb)
     rf_hyb_price = today_close * (1 + rf_hyb_ret)
     
-    # 5. Direct Hybrid ANN (결정변수 + 심리변수 12개 ANN)
-    ann_hyb = train_ann_model(X_train_hyb, y_train_r, X_train_hyb, y_train_r)
+    # 6. Direct Hybrid ANN (결정변수 + 심리변수 12개 ANN)
+    X_train_hyb_model, y_train_hyb_model, X_val_hyb, y_val_hyb = split_train_validation(X_train_hyb, y_train_r)
+    ann_hyb = train_ann_model(
+        X_train_hyb_model,
+        y_train_hyb_model,
+        X_val=X_val_hyb,
+        y_val=y_val_hyb,
+    )
     ann_hyb_ret = predict_ai_model(ann_hyb, X_test_hyb)
     ann_hyb_price = today_close * (1 + ann_hyb_ret)
     
@@ -190,6 +238,7 @@ def run_direct_hybrid_for_stock(stock_name: str, stock_path: str, news_df: pd.Da
     # 평가 메트릭 취합
     metrics = []
     metrics.append({"Company": stock_name, "Model": "Benchmark", **evaluate_regression(y_test_price, bench_price)})
+    metrics.append({"Company": stock_name, "Model": "ARIMA", **evaluate_regression(y_test_price, arima_price)})
     metrics.append({"Company": stock_name, "Model": "Extended RF", **evaluate_regression(y_test_price, rf_ext_price)})
     metrics.append({"Company": stock_name, "Model": "Direct Hybrid RF", **evaluate_regression(y_test_price, rf_hyb_price)})
     metrics.append({"Company": stock_name, "Model": "Extended ANN", **evaluate_regression(y_test_price, ann_ext_price)})
@@ -234,9 +283,9 @@ def run_direct_hybrid_for_stock(stock_name: str, stock_path: str, news_df: pd.Da
     axes[1].grid(True, alpha=0.3)
     
     # 3. RMSE 비교
-    bar_names = ["Benchmark", "Extended RF", "Direct Hybrid RF", "Extended ANN", "Direct Hybrid ANN"]
+    bar_names = ["Benchmark", "ARIMA", "Extended RF", "Direct Hybrid RF", "Extended ANN", "Direct Hybrid ANN"]
     bar_values = [df_metrics.loc[df_metrics["Model"] == name, "rmse"].values[0] for name in bar_names]
-    axes[2].bar(bar_names, bar_values, color=["dimgray", "royalblue", "darkviolet", "darkorange", "chocolate"])
+    axes[2].bar(bar_names, bar_values, color=["dimgray", "teal", "royalblue", "darkviolet", "darkorange", "chocolate"])
     axes[2].set_title(f"{stock_name} - RMSE Comparison")
     axes[2].set_ylabel("RMSE (KRW)")
     for i, val in enumerate(bar_values):
@@ -292,8 +341,8 @@ def generate_html_report(df_summary: pd.DataFrame):
     """
     
     for stock in SELECTED_STOCKS.keys():
-        pred_img = f"figures/{stock}_direct_hybrid_prediction.png"
-        fi_img = f"figures/{stock}_direct_hybrid_rf_fi.png"
+        pred_img = image_to_data_uri(FIGURES_DIR / f"{stock}_direct_hybrid_prediction.png")
+        fi_img = image_to_data_uri(FIGURES_DIR / f"{stock}_direct_hybrid_rf_fi.png")
         
         html_content += f"""
         <div class="card" style="margin-bottom: 30px;">

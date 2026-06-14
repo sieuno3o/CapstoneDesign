@@ -30,7 +30,18 @@ from src.ai_model import train_ann_model, predict_ai_model
 from src.classical_model import train_classical_model, predict_classical_model
 
 # ── 한글 폰트 설정 ──────────────────────────────────────────────────────────
-plt.rcParams['font.family'] = 'Malgun Gothic'
+_korean_fonts = [
+    "AppleGothic",
+    "Apple SD Gothic Neo",
+    "Nanum Gothic",
+    "Noto Sans CJK KR",
+    "Malgun Gothic",
+]
+_available_fonts = {f.name for f in fm.fontManager.ttflist}
+for _font in _korean_fonts:
+    if _font in _available_fonts:
+        matplotlib.rc("font", family=_font)
+        break
 plt.rcParams['axes.unicode_minus'] = False
 
 ORIGINAL_FEATURES = [
@@ -70,7 +81,7 @@ SELECTED_STOCKS = {
     "firstec":             str(BASE_DIR / "data/raw/firstec_5y.csv"),
 }
 
-FINAL_INPUT_PATH = str(BASE_DIR / "data/sentiment/final_input.csv")
+FINAL_INPUT_PATH = str(BASE_DIR / "data/sentiment/macro_news_counts_1st.csv")
 RESULTS_DIR = BASE_DIR / "results"
 METRICS_DIR = RESULTS_DIR / "metrics"
 FIGURES_DIR = RESULTS_DIR / "figures"
@@ -80,6 +91,23 @@ RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 METRICS_DIR.mkdir(parents=True, exist_ok=True)
 FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 FINAL_MODEL_DIR.mkdir(parents=True, exist_ok=True)
+
+
+SHORT_WEIGHTS = {
+    "N1": -0.38235294117647056,
+    "N2": -0.4117647058823529,
+    "N3": 0.35294117647058826,
+    "N4": -0.35294117647058826,
+    "N5": 1.088235294117647,
+}
+
+LONG_WEIGHTS = {
+    "N1": 0.25,
+    "N2": 0.05,
+    "N3": 0.5,
+    "N4": -0.05,
+    "N5": 1.2,
+}
 
 
 def evaluate_regression(y_true, y_pred):
@@ -124,12 +152,40 @@ def prepare_stock_dataframe(file_path: str) -> pd.DataFrame:
     return df
 
 
+def calc_nsi(news_indexed: pd.DataFrame, weights: dict) -> pd.Series:
+    p_sum = pd.Series(0.0, index=news_indexed.index)
+    n_sum = pd.Series(0.0, index=news_indexed.index)
+    for col, weight in weights.items():
+        if col not in news_indexed.columns:
+            continue
+        if weight > 0:
+            p_sum += weight * news_indexed[col]
+        elif weight < 0:
+            n_sum += abs(weight) * news_indexed[col]
+
+    nsi = (((p_sum - n_sum) / (p_sum + n_sum + 1.0)) * 100.0 + 100.0)
+    return nsi.rolling(window=7, min_periods=1).mean()
+
+
 def load_final_input(path: str) -> pd.DataFrame:
     df = pd.read_csv(path)
-    if "date" not in df.columns or "K_NSI_Short" not in df.columns or "K_NSI_Long" not in df.columns:
-        raise ValueError("final_input.csv는 date, K_NSI_Short, K_NSI_Long 컬럼을 포함해야 합니다.")
+    if "date" not in df.columns:
+        raise ValueError("심리 데이터는 date 컬럼을 포함해야 합니다.")
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
-    return df.dropna(subset=["date"]).reset_index(drop=True)
+    df = df.dropna(subset=["date"]).sort_values("date").reset_index(drop=True)
+
+    if {"K_NSI_Short", "K_NSI_Long"}.issubset(df.columns):
+        return df[["date", "K_NSI_Short", "K_NSI_Long"]].copy()
+
+    required_news_cols = set(SHORT_WEIGHTS) | set(LONG_WEIGHTS)
+    if not required_news_cols.issubset(df.columns):
+        missing = ", ".join(sorted(required_news_cols - set(df.columns)))
+        raise ValueError(f"심리 데이터에 K-NSI 계산용 뉴스 컬럼이 부족합니다: {missing}")
+
+    news_indexed = df.set_index(df["date"].dt.strftime("%Y-%m-%d"))
+    df["K_NSI_Short"] = calc_nsi(news_indexed, SHORT_WEIGHTS).values
+    df["K_NSI_Long"] = calc_nsi(news_indexed, LONG_WEIGHTS).values
+    return df[["date", "K_NSI_Short", "K_NSI_Long"]].copy()
 
 
 def train_baseline_models(train_df: pd.DataFrame):
@@ -172,11 +228,32 @@ def train_baseline_models(train_df: pd.DataFrame):
 
 def predict_baseline_price(model, scaler, df: pd.DataFrame, features_list):
     X = scaler.transform(df[features_list].values)
-    y_pred_return = model.predict(X)
+    try:
+        y_pred_return = model.predict(X, verbose=0)
+    except TypeError:
+        y_pred_return = model.predict(X)
     y_pred_return = np.asarray(y_pred_return)
     if y_pred_return.ndim > 1:
         y_pred_return = y_pred_return.ravel()
-    return df["Close"].values * np.exp(y_pred_return)
+    return df["Close"].values * (1 + y_pred_return)
+
+
+def safe_arima_predictions(train_close: pd.Series, test_len: int):
+    try:
+        arima_fitted = train_classical_model(train_close)
+        train_pred = arima_fitted.predict(start=0, end=len(train_close) - 1)
+        train_pred = np.asarray(train_pred, dtype=float)
+        if len(train_pred) != len(train_close) or np.isnan(train_pred).any():
+            train_pred = np.asarray(train_close, dtype=float)
+
+        test_pred = predict_classical_model(arima_fitted, steps=test_len)
+        test_pred = np.asarray(test_pred, dtype=float)
+        if len(test_pred) != test_len or np.isnan(test_pred).any():
+            raise ValueError("ARIMA forecast produced invalid values.")
+        return train_pred, test_pred
+    except Exception as e:
+        print(f"[경고] ARIMA 학습/예측 실패: {e}")
+        return np.asarray(train_close, dtype=float), None
 
 
 def train_correction_model(pred_price: np.ndarray, k_short: np.ndarray, k_long: np.ndarray, y_true: np.ndarray):
@@ -192,43 +269,37 @@ def run_two_step_for_stock(stock_name: str, stock_path: str, final_input: pd.Dat
     print("=" * 80)
 
     df = prepare_stock_dataframe(stock_path)
-    final_input_dates = final_input["date"].min(), final_input["date"].max()
-    df_test = df[(df["Date"] >= final_input_dates[0]) & (df["Date"] <= final_input_dates[1])].copy()
-    if df_test.empty:
-        raise ValueError(f"{stock_name}의 주가 데이터에서 final_input 날짜 범위와 겹치는 구간이 없습니다.")
+    matched_df = df.merge(final_input, left_on="Date", right_on="date", how="inner")
+    if len(matched_df) < 20:
+        raise ValueError(f"{stock_name}의 심리 데이터 결합 후 데이터가 충분하지 않습니다. 행 개수: {len(matched_df)}")
 
-    df_test = df_test.merge(final_input, left_on="Date", right_on="date", how="inner")
-    if len(df_test) < 10:
-        raise ValueError(f"{stock_name}의 final_input 결합 후 데이터가 충분하지 않습니다. 행 개수: {len(df_test)}")
+    matched_df = matched_df.sort_values("Date").reset_index(drop=True)
+    split_index = int(len(matched_df) * 0.7)
+    train_df = matched_df.iloc[:split_index].copy()
+    test_df = matched_df.iloc[split_index:].copy()
 
-    train_df = df[df["Date"] < df_test["Date"].min()].copy()
-    if len(train_df) < 50:
-        raise ValueError(f"{stock_name}의 baseline 학습 데이터가 부족합니다. 행 개수: {len(train_df)}")
+    if len(train_df) < 50 or len(test_df) < 5:
+        raise ValueError(
+            f"{stock_name}의 70/30 분할 후 데이터가 부족합니다. "
+            f"Train: {len(train_df)}, Test: {len(test_df)}"
+        )
 
     rf_orig, scaler_rf_orig, ann_orig, rf_ext, scaler_rf_ext, ann_ext = train_baseline_models(train_df)
 
-    df_test = df_test.sort_values("Date").reset_index(drop=True)
-    df_test["rf_orig_price"] = predict_baseline_price(rf_orig, scaler_rf_orig, df_test, ORIGINAL_FEATURES)
-    df_test["rf_ext_price"] = predict_baseline_price(rf_ext, scaler_rf_ext, df_test, EXTENDED_FEATURES)
-    df_test["ann_orig_price"] = predict_baseline_price(ann_orig, scaler_rf_orig, df_test, ORIGINAL_FEATURES)
-    df_test["ann_ext_price"] = predict_baseline_price(ann_ext, scaler_rf_ext, df_test, EXTENDED_FEATURES)
+    for frame in (train_df, test_df):
+        frame["rf_orig_price"] = predict_baseline_price(rf_orig, scaler_rf_orig, frame, ORIGINAL_FEATURES)
+        frame["rf_ext_price"] = predict_baseline_price(rf_ext, scaler_rf_ext, frame, EXTENDED_FEATURES)
+        frame["ann_orig_price"] = predict_baseline_price(ann_orig, scaler_rf_orig, frame, ORIGINAL_FEATURES)
+        frame["ann_ext_price"] = predict_baseline_price(ann_ext, scaler_rf_ext, frame, EXTENDED_FEATURES)
 
-    # ARIMA Baseline 예측
-    try:
-        arima_fitted = train_classical_model(train_df["Close"])
-        arima_pred_prices = predict_classical_model(arima_fitted, steps=len(df_test))
-        df_test["arima_baseline_price"] = np.asarray(arima_pred_prices)
-    except Exception as e:
-        print(f"[경고] {stock_name} ARIMA 학습 실패: {e}")
-        df_test["arima_baseline_price"] = df_test["Close"].values
+    arima_train_pred, arima_test_pred = safe_arima_predictions(train_df["Close"], len(test_df))
+    train_df["arima_baseline_price"] = arima_train_pred
+    test_df["arima_baseline_price"] = (
+        arima_test_pred if arima_test_pred is not None else test_df["Close"].values
+    )
 
-    # 최근 2달 검증 구간 내부에서 correction train / eval split
-    split_index = max(int(len(df_test) * 0.6), 1)
-    correction_train = df_test.iloc[:split_index].copy()
-    correction_eval = df_test.iloc[split_index:].copy()
-
-    if len(correction_eval) < 5:
-        raise ValueError(f"{stock_name} 검증 구간이 너무 작습니다. 현재 행 수: {len(correction_eval)}")
+    correction_train = train_df
+    correction_eval = test_df
 
     y_eval = correction_eval[TARGET_PRICE_COL].values
 

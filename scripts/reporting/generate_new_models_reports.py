@@ -121,7 +121,7 @@ def generate_report(csv_name, baseline_name, model_name, title, output_name, des
             <h2>1. 예측 성능 요약 대시보드</h2>
             <div class="summary-grid">
                 <div class="summary-card"><strong>대상 기업 수</strong><span>{company_count}개</span></div>
-                <div class="summary-card"><strong>평균 RMSE 개선률</strong><span>{avg_rmse_improvement:+.2f}%</span></div>
+                <div class="summary-card"><strong>평균 RMSE 변화율</strong><span>{avg_rmse_improvement:+.2f}%</span></div>
                 <div class="summary-card"><strong>비교 기준</strong><span>{baseline_name}</span></div>
             </div>
         </div>
@@ -166,9 +166,7 @@ def generate_report(csv_name, baseline_name, model_name, title, output_name, des
             if len(baseline_rows) > 0:
                 baseline_row = baseline_rows.iloc[0]
                 if df.loc[idx]['rmse'] < baseline_row['rmse']:
-                    win_badge = '<span class="badge-win">오차 개선 완료!</span>'
-                elif df.loc[idx]['direction_accuracy'] > baseline_row['direction_accuracy']:
-                    win_badge = '<span class="badge-win">방향성 개선!</span>'
+                    win_badge = '<span class="badge-win">RMSE 개선</span>'
                 
         comp_cell = ""
         if comp != current_company:
