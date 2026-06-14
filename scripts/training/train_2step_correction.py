@@ -311,6 +311,44 @@ def run_two_step_for_stock(stock_name: str, stock_path: str, final_input: pd.Dat
         print(f"[경고] {stock_name} Existing ANN 보정 모델 학습 실패: {e}")
         ann_orig_eval_pred = ann_orig_eval
 
+    # --- Extended RF + 심리지수 결합모델 (선형 회귀 보정) ---
+    try:
+        rf_ext_corr_model = train_correction_model(
+            correction_train["rf_ext_price"].values,
+            correction_train["K_NSI_Short"].values,
+            correction_train["K_NSI_Long"].values,
+            correction_train[TARGET_PRICE_COL].values,
+        )
+        rf_ext_eval_corrected_pred = rf_ext_corr_model.predict(
+            np.column_stack([
+                correction_eval["rf_ext_price"].values,
+                correction_eval["K_NSI_Short"].values,
+                correction_eval["K_NSI_Long"].values,
+            ])
+        )
+    except Exception as e:
+        print(f"[경고] {stock_name} Extended RF 보정 모델 학습 실패: {e}")
+        rf_ext_eval_corrected_pred = rf_ext_eval
+
+    # --- Extended ANN + 심리지수 결합모델 (선형 회귀 보정) ---
+    try:
+        ann_ext_corr_model = train_correction_model(
+            correction_train["ann_ext_price"].values,
+            correction_train["K_NSI_Short"].values,
+            correction_train["K_NSI_Long"].values,
+            correction_train[TARGET_PRICE_COL].values,
+        )
+        ann_ext_eval_corrected_pred = ann_ext_corr_model.predict(
+            np.column_stack([
+                correction_eval["ann_ext_price"].values,
+                correction_eval["K_NSI_Short"].values,
+                correction_eval["K_NSI_Long"].values,
+            ])
+        )
+    except Exception as e:
+        print(f"[경고] {stock_name} Extended ANN 보정 모델 학습 실패: {e}")
+        ann_ext_eval_corrected_pred = ann_ext_eval
+
     eval_date_index = correction_eval["Date"].dt.strftime("%Y-%m-%d")
 
     metrics = []
@@ -321,17 +359,19 @@ def run_two_step_for_stock(stock_name: str, stock_path: str, final_input: pd.Dat
     metrics.append({"Company": stock_name, "Model": "Existing RF", **evaluate_regression(y_eval, rf_orig_eval)})
     metrics.append({"Company": stock_name, "Model": "Existing RF + 심리지수 결합모델", **evaluate_regression(y_eval, rf_orig_eval_pred)})
     metrics.append({"Company": stock_name, "Model": "Extended RF", **evaluate_regression(y_eval, rf_ext_eval)})
+    metrics.append({"Company": stock_name, "Model": "Extended RF + 심리지수 결합모델", **evaluate_regression(y_eval, rf_ext_eval_corrected_pred)})
     metrics.append({"Company": stock_name, "Model": "Existing ANN", **evaluate_regression(y_eval, ann_orig_eval)})
     metrics.append({"Company": stock_name, "Model": "Existing ANN + 심리지수 결합모델", **evaluate_regression(y_eval, ann_orig_eval_pred)})
     metrics.append({"Company": stock_name, "Model": "Extended ANN", **evaluate_regression(y_eval, ann_ext_eval)})
+    metrics.append({"Company": stock_name, "Model": "Extended ANN + 심리지수 결합모델", **evaluate_regression(y_eval, ann_ext_eval_corrected_pred)})
 
     df_metrics = pd.DataFrame(metrics)
     metrics_path = METRICS_DIR / f"{stock_name}_2step_correction_metrics.csv"
     df_metrics.to_csv(metrics_path, index=False, encoding="utf-8-sig")
     print(f"[저장] {metrics_path}")
 
-    # 시각화 (5단 구성으로 변경)
-    fig, axes = plt.subplots(5, 1, figsize=(14, 28), dpi=120)
+    # 시각화 (7단 구성으로 변경)
+    fig, axes = plt.subplots(7, 1, figsize=(14, 40), dpi=120)
     
     # 0. Benchmark vs Corrected
     axes[0].plot(eval_date_index, y_eval, label="Actual Close", color="black", linewidth=2.5)
@@ -351,7 +391,7 @@ def run_two_step_for_stock(stock_name: str, stock_path: str, final_input: pd.Dat
     axes[1].legend()
     axes[1].grid(True, alpha=0.3)
 
-    # 2. RF Models
+    # 2. Existing RF Models
     axes[2].plot(eval_date_index, y_eval, label="Actual Close", color="black", linewidth=2.5)
     axes[2].plot(eval_date_index, rf_orig_eval, label="Existing RF", color="royalblue", linestyle="--")
     axes[2].plot(eval_date_index, rf_orig_eval_pred, label="Existing RF + 심리지수 결합모델", color="forestgreen", linestyle="-")
@@ -360,29 +400,49 @@ def run_two_step_for_stock(stock_name: str, stock_path: str, final_input: pd.Dat
     axes[2].legend()
     axes[2].grid(True, alpha=0.3)
 
-    # 3. ANN Models
+    # 3. Extended RF Models
     axes[3].plot(eval_date_index, y_eval, label="Actual Close", color="black", linewidth=2.5)
-    axes[3].plot(eval_date_index, ann_orig_eval, label="Existing ANN", color="darkorange", linestyle="--")
-    axes[3].plot(eval_date_index, ann_orig_eval_pred, label="Existing ANN + 심리지수 결합모델", color="chocolate", linestyle="-")
-    axes[3].set_title(f"{stock_name} - Existing ANN vs Existing ANN + 심리지수 결합모델")
+    axes[3].plot(eval_date_index, rf_ext_eval, label="Extended RF", color="darkgreen", linestyle="--")
+    axes[3].plot(eval_date_index, rf_ext_eval_corrected_pred, label="Extended RF + 심리지수 결합모델", color="limegreen", linestyle="-")
+    axes[3].set_title(f"{stock_name} - Extended RF vs Extended RF + 심리지수 결합모델")
     axes[3].set_ylabel("Price (KRW)")
     axes[3].legend()
     axes[3].grid(True, alpha=0.3)
 
-    # 4. RMSE Comparison
+    # 4. Existing ANN Models
+    axes[4].plot(eval_date_index, y_eval, label="Actual Close", color="black", linewidth=2.5)
+    axes[4].plot(eval_date_index, ann_orig_eval, label="Existing ANN", color="darkorange", linestyle="--")
+    axes[4].plot(eval_date_index, ann_orig_eval_pred, label="Existing ANN + 심리지수 결합모델", color="chocolate", linestyle="-")
+    axes[4].set_title(f"{stock_name} - Existing ANN vs Existing ANN + 심리지수 결합모델")
+    axes[4].set_ylabel("Price (KRW)")
+    axes[4].legend()
+    axes[4].grid(True, alpha=0.3)
+
+    # 5. Extended ANN Models
+    axes[5].plot(eval_date_index, y_eval, label="Actual Close", color="black", linewidth=2.5)
+    axes[5].plot(eval_date_index, ann_ext_eval, label="Extended ANN", color="crimson", linestyle="--")
+    axes[5].plot(eval_date_index, ann_ext_eval_corrected_pred, label="Extended ANN + 심리지수 결합모델", color="deeppink", linestyle="-")
+    axes[5].set_title(f"{stock_name} - Extended ANN vs Extended ANN + 심리지수 결합모델")
+    axes[5].set_ylabel("Price (KRW)")
+    axes[5].legend()
+    axes[5].grid(True, alpha=0.3)
+
+    # 6. RMSE Comparison
     bar_names = [
         "Benchmark", "Benchmark + 심리지수 결합모델",
         "ARIMA", "ARIMA + 심리지수 결합모델",
         "Existing RF", "Existing RF + 심리지수 결합모델",
-        "Extended RF", "Existing ANN", "Existing ANN + 심리지수 결합모델", "Extended ANN"
+        "Extended RF", "Extended RF + 심리지수 결합모델",
+        "Existing ANN", "Existing ANN + 심리지수 결합모델",
+        "Extended ANN", "Extended ANN + 심리지수 결합모델"
     ]
     bar_values = [df_metrics.loc[df_metrics["Model"] == name, "rmse"].values[0] for name in bar_names]
-    axes[4].bar(bar_names, bar_values, color=["dimgray", "purple", "teal", "orchid", "royalblue", "forestgreen", "darkgreen", "darkorange", "chocolate", "crimson"])
-    axes[4].set_title(f"{stock_name} - RMSE Comparison")
-    axes[4].set_ylabel("RMSE (KRW)")
+    axes[6].bar(bar_names, bar_values, color=["dimgray", "purple", "teal", "orchid", "royalblue", "forestgreen", "darkgreen", "limegreen", "darkorange", "chocolate", "crimson", "deeppink"])
+    axes[6].set_title(f"{stock_name} - RMSE Comparison")
+    axes[6].set_ylabel("RMSE (KRW)")
     for i, val in enumerate(bar_values):
-        axes[4].text(i, val + max(bar_values) * 0.01, f"{val:,.0f}", ha="center", va="bottom", fontsize=10)
-    axes[4].grid(True, axis="y", alpha=0.3)
+        axes[6].text(i, val + max(bar_values) * 0.01, f"{val:,.0f}", ha="center", va="bottom", fontsize=8)
+    axes[6].grid(True, axis="y", alpha=0.3)
 
     fig.autofmt_xdate(rotation=25)
     fig.tight_layout()
@@ -400,11 +460,13 @@ def plot_rmse_summary(df_summary: pd.DataFrame):
         "Benchmark", "Benchmark + 심리지수 결합모델",
         "ARIMA", "ARIMA + 심리지수 결합모델",
         "Existing RF", "Existing RF + 심리지수 결합모델",
-        "Extended RF", "Existing ANN", "Existing ANN + 심리지수 결합모델", "Extended ANN"
+        "Extended RF", "Extended RF + 심리지수 결합모델",
+        "Existing ANN", "Existing ANN + 심리지수 결합모델",
+        "Extended ANN", "Extended ANN + 심리지수 결합모델"
     ]]
 
-    fig, ax = plt.subplots(figsize=(14, 8), dpi=120)
-    pivot.plot(kind="bar", ax=ax, color=["dimgray", "purple", "teal", "orchid", "royalblue", "forestgreen", "darkgreen", "darkorange", "chocolate", "crimson"], width=0.85)
+    fig, ax = plt.subplots(figsize=(16, 8), dpi=120)
+    pivot.plot(kind="bar", ax=ax, color=["dimgray", "purple", "teal", "orchid", "royalblue", "forestgreen", "darkgreen", "limegreen", "darkorange", "chocolate", "crimson", "deeppink"], width=0.85)
     ax.set_title("2-Step Correction RMSE Comparison Across Stocks")
     ax.set_ylabel("RMSE (KRW)")
     ax.set_xlabel("Company")

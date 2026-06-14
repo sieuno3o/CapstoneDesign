@@ -32,9 +32,6 @@ from src.evaluate import regression_metrics, direction_accuracy
 from src.ai_model import train_ann_model, predict_ai_model
 from sklearn.ensemble import RandomForestRegressor
 
-from sklearn.model_selection import RandomizedSearchCV
-from sklearn.linear_model import LinearRegression
-
 def train_rf_model(X_train, y_train):
     model = RandomForestRegressor(
         n_estimators=200,
@@ -44,29 +41,6 @@ def train_rf_model(X_train, y_train):
     return model
 
 
-def train_tuned_rf_model(X_train, y_train):
-    """
-    RandomizedSearchCV를 활용하여 Random Forest의 최적 하이퍼파라미터를 탐색합니다.
-    """
-    param_dist = {
-        'n_estimators': [100, 200],
-        'max_depth': [5, 10, 15, None],
-        'min_samples_split': [2, 5, 10],
-        'min_samples_leaf': [1, 2]
-    }
-    rf = RandomForestRegressor(random_state=42)
-    search = RandomizedSearchCV(
-        estimator=rf,
-        param_distributions=param_dist,
-        n_iter=6,
-        cv=2,
-        scoring='neg_mean_squared_error',
-        random_state=42,
-        n_jobs=-1
-    )
-    search.fit(X_train, y_train)
-    print(f"  [RF 튜닝 완료] Best Params: {search.best_params_}")
-    return search.best_estimator_
 
 
 # ── 기존 논문 변수 (비교 기준용, 7개) ───────────────────────────────────────
@@ -94,8 +68,7 @@ EXTENDED_FEATURES = [
     "volatility_7", # 7일 수익률 표준편차
 ]
 
-# K-NSI 결합 변수 정의 (총 12개)
-HYBRID_FEATURES = EXTENDED_FEATURES + ["nsi_short", "nsi_long"]
+
 
 TARGET_COL = "target_next_return"   # 수익률 예측
 TARGET_PRICE_COL = "target_next_close"  # 역변환 검증용 종가 타깃
@@ -111,7 +84,7 @@ def calculate_metrics(y_true, y_pred, model_name: str):
 
 def train_rf_extended_pipeline(data_name: str, file_path: str):
     print("=" * 80)
-    print(f"[확장/하이브리드 RF 파이프라인] {data_name} 실행 시작")
+    print(f"[확장 RF 파이프라인] {data_name} 실행 시작")
     print("=" * 80)
 
     # 1. 주가 데이터 불러오기
@@ -270,32 +243,12 @@ def train_rf_extended_pipeline(data_name: str, file_path: str):
     results_return["Extended ANN"] = ann_ext_ret
     results_price["Extended ANN"]  = ret_to_price(ann_ext_ret)
 
-    # (F) Sentiment Only (LR - NSI Only - 2 features)
-    print(f"\n[{data_name}] Sentiment Only (LR) 학습 중...")
-    scaler_nsi = MinMaxScaler()
-    X_train_nsi = scaler_nsi.fit_transform(train_df[["nsi_short", "nsi_long"]])
-    X_test_nsi  = scaler_nsi.transform(test_df[["nsi_short", "nsi_long"]])
-    lr_nsi = LinearRegression().fit(X_train_nsi, y_train_r)
-    lr_nsi_ret = lr_nsi.predict(X_test_nsi)
-    results_return["Sentiment Only (LR)"] = lr_nsi_ret
-    results_price["Sentiment Only (LR)"]  = ret_to_price(lr_nsi_ret)
-
-    # (G) Hybrid Sentiment RF (방식 A - 12 features - 하이퍼파라미터 튜닝)
-    print(f"\n[{data_name}] Hybrid Sentiment RF (Tuned) 학습 중...")
-    scaler_hyb  = MinMaxScaler()
-    X_train_hyb = scaler_hyb.fit_transform(train_df[HYBRID_FEATURES])
-    X_test_hyb  = scaler_hyb.transform(test_df[HYBRID_FEATURES])
-    rf_hyb = train_tuned_rf_model(X_train_hyb, y_train_r)
-    rf_hyb_ret = rf_hyb.predict(X_test_hyb)
-    results_return["Hybrid RF+NSI"] = rf_hyb_ret
-    results_price["Hybrid RF+NSI"]  = ret_to_price(rf_hyb_ret)
-
-    # 7. 피처 중요도 시각화 (Hybrid RF+NSI)
-    importances = rf_hyb.feature_importances_
-    feat_series = pd.Series(importances, index=HYBRID_FEATURES).sort_values(ascending=True)
+    # 7. 피처 중요도 시각화 (Extended RF)
+    importances = rf_ext.feature_importances_
+    feat_series = pd.Series(importances, index=EXTENDED_FEATURES).sort_values(ascending=True)
     fig_fi, ax_fi = plt.subplots(figsize=(10, 8), dpi=100)
-    feat_series.plot(kind="barh", ax=ax_fi, color="indigo")
-    ax_fi.set_title(f"Feature Importance (Hybrid RF+NSI) - {data_name.replace('_', ' ').title()}",
+    feat_series.plot(kind="barh", ax=ax_fi, color="royalblue")
+    ax_fi.set_title(f"Feature Importance (Extended RF) - {data_name.replace('_', ' ').title()}",
                     fontsize=13, fontweight="bold")
     ax_fi.set_xlabel("Importance", fontsize=11)
     ax_fi.grid(True, alpha=0.3)
@@ -319,7 +272,7 @@ def train_rf_extended_pipeline(data_name: str, file_path: str):
     df_metrics = df_metrics[["Model", "rmse", "mae", "mape", "mbe", "r2", "direction_accuracy"]]
 
     Path("results/metrics").mkdir(parents=True, exist_ok=True)
-    results_save_path = f"results/metrics/{data_name}_hybrid_results.csv"
+    results_save_path = f"results/metrics/{data_name}_extended_results.csv"
     df_metrics.to_csv(results_save_path, index=False, encoding="utf-8-sig")
     print(f"[평가 결과 저장 완료] -> {results_save_path}")
     print(df_metrics.to_string(index=False))
@@ -330,7 +283,7 @@ def train_rf_extended_pipeline(data_name: str, file_path: str):
         rmse_val = np.sqrt(np.mean((y_test_price - y_pred) ** 2))
         rmse_dict[model_name] = rmse_val
 
-    # ── 그래프 1: 예측값 비교 (7개선 종합 비교) ──────────────────────────
+    # ── 그래프 1: 예측값 비교 (6개 모델 종합 비교) ──────────────────────────
     fig, ax = plt.subplots(figsize=(16, 7), dpi=120)
 
     # 실제 종가
@@ -345,11 +298,8 @@ def train_rf_extended_pipeline(data_name: str, file_path: str):
     # Extended RF
     ax.plot(test_dates, results_price["Extended RF"], label=f"Extended RF  (10 features)  RMSE={rmse_dict['Extended RF']:,.0f}", color="royalblue", linestyle="-", linewidth=1.8)
 
-    # Sentiment Only (LR)
-    ax.plot(test_dates, results_price["Sentiment Only (LR)"], label=f"Sentiment Only (LR)        RMSE={rmse_dict['Sentiment Only (LR)']:,.0f}", color="orchid", linestyle="--", linewidth=1.6)
-
-    # Hybrid RF+NSI
-    ax.plot(test_dates, results_price["Hybrid RF+NSI"], label=f"Hybrid RF+NSI (12 features) RMSE={rmse_dict['Hybrid RF+NSI']:,.0f}", color="darkviolet", linestyle="-", linewidth=2.5, zorder=4)
+    # Extended ANN
+    ax.plot(test_dates, results_price["Extended ANN"], label=f"Extended ANN (10 features)  RMSE={rmse_dict['Extended ANN']:,.0f}", color="forestgreen", linestyle="--", linewidth=1.6)
 
     ax.set_title(f"Model Predictions Comparison — {data_name.replace('_', ' ').title()}", fontsize=14, fontweight="bold", pad=14)
     ax.set_xlabel("Date", fontsize=12)
@@ -359,21 +309,19 @@ def train_rf_extended_pipeline(data_name: str, file_path: str):
     ax.tick_params(axis="x", rotation=20)
 
     # 기준 설명 텍스트 박스
-    improve_existing = (rmse_dict["Existing RF"] - rmse_dict["Hybrid RF+NSI"]) / rmse_dict["Existing RF"] * 100
-    improve_ext = (rmse_dict["Extended RF"] - rmse_dict["Hybrid RF+NSI"]) / rmse_dict["Extended RF"] * 100
-    improve_naive = (rmse_dict["Benchmark"] - rmse_dict["Hybrid RF+NSI"]) / rmse_dict["Benchmark"] * 100
+    improve_existing = (rmse_dict["Existing RF"] - rmse_dict["Extended RF"]) / rmse_dict["Existing RF"] * 100
+    improve_naive = (rmse_dict["Benchmark"] - rmse_dict["Extended RF"]) / rmse_dict["Benchmark"] * 100
     
     note_text = (
-        "[최종 Hybrid 개선율]\n"
+        "[최종 Extended 개선율]\n"
         f"Existing RF 대비 개선 : {improve_existing:+.2f}%\n"
-        f"Extended RF 대비 개선 : {improve_ext:+.2f}%\n"
         f"Naive 대비 개선        : {improve_naive:+.2f}%"
     )
     ax.text(0.99, 0.02, note_text, transform=ax.transAxes, fontsize=8, va="bottom", ha="right",
             bbox=dict(boxstyle="round,pad=0.4", facecolor="lightyellow", edgecolor="gray", alpha=0.9))
 
     fig.tight_layout()
-    pred_graph_path = f"results/figures/{data_name}_hybrid_prediction.png"
+    pred_graph_path = f"results/figures/{data_name}_extended_prediction.png"
     fig.savefig(pred_graph_path, bbox_inches="tight")
     plt.close(fig)
 
@@ -388,8 +336,7 @@ def train_rf_extended_pipeline(data_name: str, file_path: str):
     ax_zoom.plot(z_dates, results_price["ARIMA"][-zoom_days:], label="ARIMA", color="crimson", linestyle="-.", linewidth=1.5)
     ax_zoom.plot(z_dates, results_price["Existing RF"][-zoom_days:], label="Existing RF", color="darkorange", linestyle="--", linewidth=1.5)
     ax_zoom.plot(z_dates, results_price["Extended RF"][-zoom_days:], label="Extended RF", color="royalblue", linestyle="-", linewidth=1.8)
-    ax_zoom.plot(z_dates, results_price["Sentiment Only (LR)"][-zoom_days:], label="Sentiment Only (LR)", color="orchid", linestyle="--", linewidth=1.5)
-    ax_zoom.plot(z_dates, results_price["Hybrid RF+NSI"][-zoom_days:], label="Hybrid RF+NSI (Tuned)", color="darkviolet", linestyle="-", linewidth=2.5, zorder=4)
+    ax_zoom.plot(z_dates, results_price["Extended ANN"][-zoom_days:], label="Extended ANN", color="forestgreen", linestyle="--", linewidth=1.5)
     
     ax_zoom.set_title(f"Model Predictions (Recent {zoom_days} Days Zoom-in) — {data_name.replace('_', ' ').title()}", fontsize=12, fontweight="bold", pad=12)
     ax_zoom.set_xlabel("Date", fontsize=11)
@@ -398,8 +345,7 @@ def train_rf_extended_pipeline(data_name: str, file_path: str):
     ax_zoom.grid(True, alpha=0.3)
     ax_zoom.tick_params(axis="x", rotation=15)
     fig_zoom.tight_layout()
-    
-    zoom_graph_path = f"results/figures/{data_name}_hybrid_prediction_zoom.png"
+    zoom_graph_path = f"results/figures/{data_name}_extended_prediction_zoom.png"
     fig_zoom.savefig(zoom_graph_path, bbox_inches="tight")
     plt.close(fig_zoom)
     print(f"[줌인 비교 그래프 저장 완료] -> {zoom_graph_path}")
@@ -408,7 +354,7 @@ def train_rf_extended_pipeline(data_name: str, file_path: str):
     # ── 그래프 2: RMSE 막대 비교 ─────────────────────
     model_names = list(rmse_dict.keys())
     rmse_values = list(rmse_dict.values())
-    bar_colors = ["dimgray", "dimgray", "darkorange", "royalblue", "forestgreen", "orchid", "darkviolet"]
+    bar_colors = ["dimgray", "dimgray", "darkorange", "royalblue", "forestgreen", "orchid"]
     
     fig2, ax2 = plt.subplots(figsize=(10, 5), dpi=120)
     bars = ax2.bar(model_names, rmse_values, color=bar_colors, edgecolor="white", linewidth=0.8, alpha=0.88)
