@@ -6,6 +6,7 @@ from sklearn.preprocessing import MinMaxScaler
 from src.data_loader import load_price_data
 from src.preprocess import (
     add_return_features,
+    add_target_next_return,
     add_target_next_close,
     drop_missing_rows,
 )
@@ -29,7 +30,8 @@ FEATURE_COLS = [
     "oc_diff"
 ]
 
-TARGET_COL = "target_next_close"
+TARGET_COL = "target_next_return"
+TARGET_PRICE_COL = "target_next_close"
 
 
 def train_ai_pipeline(data_name: str, file_path: str):
@@ -46,7 +48,8 @@ def train_ai_pipeline(data_name: str, file_path: str):
     df = add_volatility(df, return_col="log_return")
     df = add_price_structure_features(df)
 
-    # 3. 타깃 생성 (내일 종가)
+    # 3. 타깃 생성 (내일 수익률 및 검증용 종가)
+    df = add_target_next_return(df, price_col="Close")
     df = add_target_next_close(df, price_col="Close")
 
     # 4. 결측 제거
@@ -71,13 +74,16 @@ def train_ai_pipeline(data_name: str, file_path: str):
     X_train = scaler.fit_transform(X_train_raw)
     X_test = scaler.transform(X_test_raw)
 
-    y_test_series = pd.Series(y_test.values, index=test_df["Date"], name="Actual")
+    y_test_price = test_df[TARGET_PRICE_COL]
+    y_test_series = pd.Series(y_test_price.values, index=test_df["Date"], name="Actual")
+    today_close = test_df["Close"].values
 
     # 7. Random Forest 모델 학습 및 평가
     print(f"\n[{data_name}] Random Forest 학습 중...")
     rf_model = train_rf_model(X_train, y_train)
-    rf_pred = predict_ai_model(rf_model, X_test)
-    rf_pred_series = pd.Series(rf_pred, index=test_df["Date"], name="Predicted")
+    rf_pred_return = predict_ai_model(rf_model, X_test)
+    rf_pred_price = today_close * (1 + rf_pred_return)
+    rf_pred_series = pd.Series(rf_pred_price, index=test_df["Date"], name="Predicted")
     
     rf_metrics = evaluate_and_plot(
         y_true=y_test_series,
@@ -91,8 +97,9 @@ def train_ai_pipeline(data_name: str, file_path: str):
     # 8. ANN 모델 학습 및 평가
     print(f"\n[{data_name}] ANN 학습 중...")
     ann_model = train_ann_model(X_train, y_train)
-    ann_pred = predict_ai_model(ann_model, X_test)
-    ann_pred_series = pd.Series(ann_pred, index=test_df["Date"], name="Predicted")
+    ann_pred_return = predict_ai_model(ann_model, X_test)
+    ann_pred_price = today_close * (1 + ann_pred_return)
+    ann_pred_series = pd.Series(ann_pred_price, index=test_df["Date"], name="Predicted")
 
     ann_metrics = evaluate_and_plot(
         y_true=y_test_series,
