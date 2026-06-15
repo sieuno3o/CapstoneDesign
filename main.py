@@ -1,28 +1,28 @@
 from src.train import train_all_models
 from src.train_ai_pipeline import train_all_ai_models
 
-def run_rf_extended():
-    """확장 RF 파이프라인 (run_rf_extended.py 로직을 main에서 직접 호출)"""
+def train_rf_extended():
+    """확장 RF 파이프라인 (train_rf_extended.py 로직을 main에서 직접 호출)"""
     import os
     from pathlib import Path
     from src.train_rf_extended import train_rf_extended_pipeline
     import pandas as pd
 
     stocks = {
-        "samsung_electronics": "data/rawdata/samsung_electronics_5y.csv",
-        "sk_hynix": "data/rawdata/sk_hynix_5y.csv",
-        "wonik_ips": "data/rawdata/wonik_ips_5y.csv",
-        "ia": "data/rawdata/ia_5y.csv",
-        "hanwha_aerospace": "data/rawdata/hanwha_aerospace_5y.csv",
-        "lig_nex1": "data/rawdata/lig_nex1_5y.csv",
-        "snt_dynamics": "data/rawdata/snt_dynamics_5y.csv",
-        "firstec": "data/rawdata/firstec_5y.csv",
-        "rtx": "data/rawdata/rtx_5y.csv",
-        "aerovironment": "data/rawdata/aerovironment_5y.csv",
-        "draganfly": "data/rawdata/draganfly_5y.csv",
-        "nvidia": "data/rawdata/nvidia_5y.csv",
-        "axt": "data/rawdata/axt_5y.csv",
-        "maxlinear": "data/rawdata/maxlinear_5y.csv",
+        "samsung_electronics": "data/raw/samsung_electronics_5y.csv",
+        "sk_hynix": "data/raw/sk_hynix_5y.csv",
+        "wonik_ips": "data/raw/wonik_ips_5y.csv",
+        "ia": "data/raw/ia_5y.csv",
+        "hanwha_aerospace": "data/raw/hanwha_aerospace_5y.csv",
+        "lig_nex1": "data/raw/lig_nex1_5y.csv",
+        "snt_dynamics": "data/raw/snt_dynamics_5y.csv",
+        "firstec": "data/raw/firstec_5y.csv",
+        "rtx": "data/raw/rtx_5y.csv",
+        "aerovironment": "data/raw/aerovironment_5y.csv",
+        "draganfly": "data/raw/draganfly_5y.csv",
+        "nvidia": "data/raw/nvidia_5y.csv",
+        "axt": "data/raw/axt_5y.csv",
+        "maxlinear": "data/raw/maxlinear_5y.csv",
     }
 
     all_results = []
@@ -60,7 +60,7 @@ def main():
     train_all_ai_models()
 
     # 2-1. 확장 RF 모델 (기술적 지표 추가 버전)
-    run_rf_extended()
+    train_rf_extended()
 
 
 if __name__ == "__main__":
