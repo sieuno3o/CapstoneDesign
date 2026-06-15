@@ -3,7 +3,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 from sklearn.ensemble import RandomForestRegressor
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.layers import Dense, Dropout, Input
 from tensorflow.keras.callbacks import EarlyStopping
 
 
@@ -24,7 +24,8 @@ def train_ann_model(X_train, y_train, X_val=None, y_val=None):
     - X_val, y_val: 외부 검증 데이터 (val_df) 사용 시 전달
     """
     model = Sequential([
-        Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
+        Input(shape=(X_train.shape[1],)),
+        Dense(64, activation='relu'),
         Dropout(0.2),
         Dense(32, activation='relu'),
         Dropout(0.2),
