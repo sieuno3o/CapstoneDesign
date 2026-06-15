@@ -286,6 +286,20 @@
                             <td><code>results/existing_ann_sentiment_report.html</code></td>
                             <td>기존 기술적 피처 7개만 사용한 인공신경망(ANN) 모델의 가격 예측치에 K-NSI 변수를 선형 결합하여 방향성(Acc)을 보정한 모델</td>
                         </tr>
+                        <tr>
+                            <td><span class="badge badge-success">Model 12</span></td>
+                            <td><strong>Extended RF + 심리지수 결합모델</strong></td>
+                            <td><code>scripts/training/train_2step_correction.py</code></td>
+                            <td>(통합 보고서)</td>
+                            <td>10개의 보조지표가 추가된 Extended RF 모델의 예측치에 K-NSI 지수를 2단계 선형 결합하여 정확도를 끌어올린 모델</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-success">Model 13</span></td>
+                            <td><strong>Extended ANN + 심리지수 결합모델</strong></td>
+                            <td><code>scripts/training/train_2step_correction.py</code></td>
+                            <td>(통합 보고서)</td>
+                            <td>10개의 보조지표가 추가된 Extended ANN 모델의 예측치에 K-NSI 지수를 2단계 선형 결합한 모델</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -322,324 +336,484 @@
                     <tbody>
                         
             <tr>
-                <td rowspan="4" style="font-weight: 700; background: #f8fafc; border-right: 1px solid #e2e8f0; text-align: center;">동진쎄미켐</td>
+                <td rowspan="6" style="font-weight: 700; background: #f8fafc; border-right: 1px solid #e2e8f0; text-align: center;">삼성전자</td>
                 <td style="font-weight: 500;">Benchmark vs 심리결합</td>
-                <td>2,440.2 &rarr; 3,781.6</td>
-                <td><span style="color: #ef4444; font-weight:600;">-54.97%</span></td>
-                <td>4.12% &rarr; 7.21%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-3.10%p</span></td>
-                <td>57.14% &rarr; 35.71%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-21.43%p</span></td>
+                <td>4,018.9 &rarr; 4,126.3</td>
+                <td><span style="color: #ef4444; font-weight:600;">-2.67%</span></td>
+                <td>2.01% &rarr; 2.08%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.07%p</span></td>
+                <td>46.91% &rarr; 44.66%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-2.25%p</span></td>
             </tr>
             <tr>
                 
                 <td style="font-weight: 500;">ARIMA vs 심리결합</td>
-                <td>3,226.4 &rarr; 3,259.8</td>
-                <td><span style="color: #ef4444; font-weight:600;">-1.03%</span></td>
-                <td>4.54% &rarr; 5.03%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-0.49%p</span></td>
-                <td>71.43% &rarr; 50.00%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-21.43%p</span></td>
+                <td>50,339.7 &rarr; 50,391.4</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.10%</span></td>
+                <td>25.31% &rarr; 25.37%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.06%p</span></td>
+                <td>43.26% &rarr; 42.98%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.28%p</span></td>
             </tr>
             <tr>
                 
                 <td style="font-weight: 500;">Existing RF vs 심리결합</td>
-                <td>2,226.2 &rarr; 3,813.2</td>
-                <td><span style="color: #ef4444; font-weight:600;">-71.29%</span></td>
-                <td>3.82% &rarr; 7.31%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-3.49%p</span></td>
-                <td>42.86% &rarr; 35.71%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-7.14%p</span></td>
+                <td>5,496.4 &rarr; 5,419.6</td>
+                <td><span style="color: #2563eb; font-weight:600;">+1.40%</span></td>
+                <td>2.73% &rarr; 2.69%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.03%p</span></td>
+                <td>43.54% &rarr; 43.26%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.28%p</span></td>
             </tr>
             <tr>
                 
                 <td style="font-weight: 500;">Existing ANN vs 심리결합</td>
-                <td>2,435.9 &rarr; 3,691.8</td>
-                <td><span style="color: #ef4444; font-weight:600;">-51.56%</span></td>
-                <td>4.19% &rarr; 7.00%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-2.81%p</span></td>
-                <td>42.86% &rarr; 35.71%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-7.14%p</span></td>
+                <td>4,280.4 &rarr; 4,260.5</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.47%</span></td>
+                <td>2.07% &rarr; 2.08%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.01%p</span></td>
+                <td>48.88% &rarr; 46.63%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-2.25%p</span></td>
             </tr>
             <tr>
-                <td rowspan="4" style="font-weight: 700; background: #f8fafc; border-right: 1px solid #e2e8f0; text-align: center;">퍼스텍</td>
+                
+                <td style="font-weight: 500;">Extended RF vs 심리결합</td>
+                <td>5,244.4 &rarr; 5,154.7</td>
+                <td><span style="color: #2563eb; font-weight:600;">+1.71%</span></td>
+                <td>2.62% &rarr; 2.58%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.05%p</span></td>
+                <td>44.66% &rarr; 46.63%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+1.97%p</span></td>
+            </tr>
+            <tr>
+                
+                <td style="font-weight: 500;">Extended ANN vs 심리결합</td>
+                <td>4,035.7 &rarr; 4,116.0</td>
+                <td><span style="color: #ef4444; font-weight:600;">-1.99%</span></td>
+                <td>2.03% &rarr; 2.10%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.07%p</span></td>
+                <td>47.19% &rarr; 43.54%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-3.65%p</span></td>
+            </tr>
+            <tr>
+                <td rowspan="6" style="font-weight: 700; background: #f8fafc; border-right: 1px solid #e2e8f0; text-align: center;">SK하이닉스</td>
                 <td style="font-weight: 500;">Benchmark vs 심리결합</td>
-                <td>965.0 &rarr; 1,456.1</td>
-                <td><span style="color: #ef4444; font-weight:600;">-50.89%</span></td>
-                <td>7.65% &rarr; 9.67%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-2.02%p</span></td>
-                <td>57.14% &rarr; 57.14%</td>
-                <td><span style="color: #64748b; font-weight:600;">+0.00%p</span></td>
+                <td>24,249.0 &rarr; 24,618.2</td>
+                <td><span style="color: #ef4444; font-weight:600;">-1.52%</span></td>
+                <td>2.87% &rarr; 2.90%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.03%p</span></td>
+                <td>46.35% &rarr; 47.47%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+1.12%p</span></td>
             </tr>
             <tr>
                 
                 <td style="font-weight: 500;">ARIMA vs 심리결합</td>
-                <td>4,396.2 &rarr; 2,016.2</td>
-                <td><span style="color: #2563eb; font-weight:600;">+54.14%</span></td>
-                <td>44.49% &rarr; 12.82%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+31.67%p</span></td>
-                <td>57.14% &rarr; 64.29%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+7.14%p</span></td>
+                <td>372,015.1 &rarr; 371,935.9</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.02%</span></td>
+                <td>41.34% &rarr; 41.35%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.00%p</span></td>
+                <td>47.19% &rarr; 47.19%</td>
+                <td><span style="color: #64748b; font-weight:600;">+0.00%p</span></td>
             </tr>
             <tr>
                 
                 <td style="font-weight: 500;">Existing RF vs 심리결합</td>
-                <td>955.3 &rarr; 1,394.9</td>
-                <td><span style="color: #ef4444; font-weight:600;">-46.02%</span></td>
-                <td>8.27% &rarr; 9.84%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-1.58%p</span></td>
-                <td>50.00% &rarr; 57.14%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+7.14%p</span></td>
+                <td>28,738.8 &rarr; 28,123.7</td>
+                <td><span style="color: #2563eb; font-weight:600;">+2.14%</span></td>
+                <td>3.58% &rarr; 3.52%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.06%p</span></td>
+                <td>45.22% &rarr; 45.51%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.28%p</span></td>
             </tr>
             <tr>
                 
                 <td style="font-weight: 500;">Existing ANN vs 심리결합</td>
-                <td>1,050.6 &rarr; 1,521.6</td>
-                <td><span style="color: #ef4444; font-weight:600;">-44.84%</span></td>
-                <td>7.63% &rarr; 9.69%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-2.06%p</span></td>
-                <td>57.14% &rarr; 57.14%</td>
+                <td>61,383.4 &rarr; 61,932.1</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.89%</span></td>
+                <td>4.69% &rarr; 4.68%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.00%p</span></td>
+                <td>48.88% &rarr; 50.84%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+1.97%p</span></td>
+            </tr>
+            <tr>
+                
+                <td style="font-weight: 500;">Extended RF vs 심리결합</td>
+                <td>27,539.3 &rarr; 26,976.9</td>
+                <td><span style="color: #2563eb; font-weight:600;">+2.04%</span></td>
+                <td>3.32% &rarr; 3.27%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.05%p</span></td>
+                <td>46.63% &rarr; 46.63%</td>
                 <td><span style="color: #64748b; font-weight:600;">+0.00%p</span></td>
             </tr>
             <tr>
-                <td rowspan="4" style="font-weight: 700; background: #f8fafc; border-right: 1px solid #e2e8f0; text-align: center;">한화에어로스페이스</td>
+                
+                <td style="font-weight: 500;">Extended ANN vs 심리결합</td>
+                <td>65,839.5 &rarr; 67,119.2</td>
+                <td><span style="color: #ef4444; font-weight:600;">-1.94%</span></td>
+                <td>5.11% &rarr; 5.19%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.08%p</span></td>
+                <td>47.19% &rarr; 52.81%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+5.62%p</span></td>
+            </tr>
+            <tr>
+                <td rowspan="6" style="font-weight: 700; background: #f8fafc; border-right: 1px solid #e2e8f0; text-align: center;">원익IPS</td>
                 <td style="font-weight: 500;">Benchmark vs 심리결합</td>
-                <td>53,362.9 &rarr; 58,189.8</td>
-                <td><span style="color: #ef4444; font-weight:600;">-9.05%</span></td>
-                <td>3.20% &rarr; 3.43%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-0.24%p</span></td>
-                <td>50.00% &rarr; 50.00%</td>
-                <td><span style="color: #64748b; font-weight:600;">+0.00%p</span></td>
+                <td>3,979.2 &rarr; 4,035.1</td>
+                <td><span style="color: #ef4444; font-weight:600;">-1.41%</span></td>
+                <td>2.97% &rarr; 3.04%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.07%p</span></td>
+                <td>49.86% &rarr; 46.52%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-3.34%p</span></td>
             </tr>
             <tr>
                 
                 <td style="font-weight: 500;">ARIMA vs 심리결합</td>
-                <td>340,346.2 &rarr; 69,741.0</td>
-                <td><span style="color: #2563eb; font-weight:600;">+79.51%</span></td>
-                <td>22.84% &rarr; 3.93%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+18.92%p</span></td>
-                <td>50.00% &rarr; 42.86%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-7.14%p</span></td>
-            </tr>
-            <tr>
-                
-                <td style="font-weight: 500;">Existing RF vs 심리결합</td>
-                <td>66,601.8 &rarr; 62,958.4</td>
-                <td><span style="color: #2563eb; font-weight:600;">+5.47%</span></td>
-                <td>3.82% &rarr; 3.67%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+0.15%p</span></td>
-                <td>57.14% &rarr; 57.14%</td>
+                <td>35,632.8 &rarr; 35,587.1</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.13%</span></td>
+                <td>38.97% &rarr; 39.13%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.16%p</span></td>
+                <td>46.52% &rarr; 46.52%</td>
                 <td><span style="color: #64748b; font-weight:600;">+0.00%p</span></td>
             </tr>
             <tr>
                 
-                <td style="font-weight: 500;">Existing ANN vs 심리결합</td>
-                <td>53,530.9 &rarr; 61,771.2</td>
-                <td><span style="color: #ef4444; font-weight:600;">-15.39%</span></td>
-                <td>3.20% &rarr; 3.70%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-0.50%p</span></td>
-                <td>42.86% &rarr; 50.00%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+7.14%p</span></td>
+                <td style="font-weight: 500;">Existing RF vs 심리결합</td>
+                <td>3,946.1 &rarr; 3,945.7</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.01%</span></td>
+                <td>3.25% &rarr; 3.21%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.04%p</span></td>
+                <td>51.81% &rarr; 50.97%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.84%p</span></td>
             </tr>
             <tr>
-                <td rowspan="4" style="font-weight: 700; background: #f8fafc; border-right: 1px solid #e2e8f0; text-align: center;">LIG넥스원</td>
+                
+                <td style="font-weight: 500;">Existing ANN vs 심리결합</td>
+                <td>6,842.7 &rarr; 6,821.7</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.31%</span></td>
+                <td>3.67% &rarr; 3.69%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.02%p</span></td>
+                <td>50.97% &rarr; 44.85%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-6.13%p</span></td>
+            </tr>
+            <tr>
+                
+                <td style="font-weight: 500;">Extended RF vs 심리결합</td>
+                <td>4,091.7 &rarr; 4,069.7</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.54%</span></td>
+                <td>3.48% &rarr; 3.43%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.05%p</span></td>
+                <td>47.35% &rarr; 47.08%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.28%p</span></td>
+            </tr>
+            <tr>
+                
+                <td style="font-weight: 500;">Extended ANN vs 심리결합</td>
+                <td>4,025.1 &rarr; 4,076.6</td>
+                <td><span style="color: #ef4444; font-weight:600;">-1.28%</span></td>
+                <td>3.01% &rarr; 3.13%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.11%p</span></td>
+                <td>47.35% &rarr; 46.52%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.84%p</span></td>
+            </tr>
+            <tr>
+                <td rowspan="6" style="font-weight: 700; background: #f8fafc; border-right: 1px solid #e2e8f0; text-align: center;">동진쎄미켐</td>
                 <td style="font-weight: 500;">Benchmark vs 심리결합</td>
-                <td>64,954.9 &rarr; 64,353.4</td>
-                <td><span style="color: #2563eb; font-weight:600;">+0.93%</span></td>
-                <td>5.77% &rarr; 6.43%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-0.66%p</span></td>
-                <td>42.86% &rarr; 50.00%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+7.14%p</span></td>
+                <td>1,440.4 &rarr; 1,447.1</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.47%</span></td>
+                <td>2.69% &rarr; 2.72%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.04%p</span></td>
+                <td>51.53% &rarr; 51.81%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.28%p</span></td>
             </tr>
             <tr>
                 
                 <td style="font-weight: 500;">ARIMA vs 심리결합</td>
-                <td>365,260.1 &rarr; 60,595.1</td>
-                <td><span style="color: #2563eb; font-weight:600;">+83.41%</span></td>
-                <td>43.04% &rarr; 5.89%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+37.15%p</span></td>
-                <td>42.86% &rarr; 57.14%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+14.29%p</span></td>
+                <td>8,213.5 &rarr; 8,236.9</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.28%</span></td>
+                <td>20.75% &rarr; 20.91%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.16%p</span></td>
+                <td>52.09% &rarr; 51.81%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.28%p</span></td>
             </tr>
             <tr>
                 
                 <td style="font-weight: 500;">Existing RF vs 심리결합</td>
-                <td>100,917.7 &rarr; 85,373.6</td>
-                <td><span style="color: #2563eb; font-weight:600;">+15.40%</span></td>
-                <td>9.96% &rarr; 8.78%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+1.17%p</span></td>
-                <td>42.86% &rarr; 42.86%</td>
+                <td>1,467.7 &rarr; 1,462.8</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.33%</span></td>
+                <td>3.21% &rarr; 3.18%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.03%p</span></td>
+                <td>55.15% &rarr; 54.04%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-1.11%p</span></td>
+            </tr>
+            <tr>
+                
+                <td style="font-weight: 500;">Existing ANN vs 심리결합</td>
+                <td>1,454.5 &rarr; 1,465.6</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.76%</span></td>
+                <td>2.83% &rarr; 2.95%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.12%p</span></td>
+                <td>50.97% &rarr; 50.14%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.84%p</span></td>
+            </tr>
+            <tr>
+                
+                <td style="font-weight: 500;">Extended RF vs 심리결합</td>
+                <td>1,541.9 &rarr; 1,539.5</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.16%</span></td>
+                <td>3.16% &rarr; 3.15%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.01%p</span></td>
+                <td>53.20% &rarr; 52.37%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.84%p</span></td>
+            </tr>
+            <tr>
+                
+                <td style="font-weight: 500;">Extended ANN vs 심리결합</td>
+                <td>1,515.2 &rarr; 1,551.1</td>
+                <td><span style="color: #ef4444; font-weight:600;">-2.37%</span></td>
+                <td>3.17% &rarr; 3.36%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.19%p</span></td>
+                <td>52.37% &rarr; 51.81%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.56%p</span></td>
+            </tr>
+            <tr>
+                <td rowspan="6" style="font-weight: 700; background: #f8fafc; border-right: 1px solid #e2e8f0; text-align: center;">한화에어로스페이스</td>
+                <td style="font-weight: 500;">Benchmark vs 심리결합</td>
+                <td>35,767.9 &rarr; 35,684.0</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.23%</span></td>
+                <td>2.97% &rarr; 2.99%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.02%p</span></td>
+                <td>51.43% &rarr; 48.57%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-2.86%p</span></td>
+            </tr>
+            <tr>
+                
+                <td style="font-weight: 500;">ARIMA vs 심리결합</td>
+                <td>596,470.2 &rarr; 595,165.3</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.22%</span></td>
+                <td>52.48% &rarr; 52.36%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.12%p</span></td>
+                <td>51.43% &rarr; 51.71%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.29%p</span></td>
+            </tr>
+            <tr>
+                
+                <td style="font-weight: 500;">Existing RF vs 심리결합</td>
+                <td>35,514.2 &rarr; 35,507.3</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.02%</span></td>
+                <td>2.97% &rarr; 2.98%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.00%p</span></td>
+                <td>56.00% &rarr; 56.29%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.29%p</span></td>
+            </tr>
+            <tr>
+                
+                <td style="font-weight: 500;">Existing ANN vs 심리결합</td>
+                <td>52,604.1 &rarr; 51,010.6</td>
+                <td><span style="color: #2563eb; font-weight:600;">+3.03%</span></td>
+                <td>4.14% &rarr; 4.00%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.14%p</span></td>
+                <td>48.57% &rarr; 48.29%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.29%p</span></td>
+            </tr>
+            <tr>
+                
+                <td style="font-weight: 500;">Extended RF vs 심리결합</td>
+                <td>36,848.0 &rarr; 36,755.4</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.25%</span></td>
+                <td>3.01% &rarr; 3.01%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.01%p</span></td>
+                <td>52.86% &rarr; 52.57%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.29%p</span></td>
+            </tr>
+            <tr>
+                
+                <td style="font-weight: 500;">Extended ANN vs 심리결합</td>
+                <td>187,590.5 &rarr; 189,170.7</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.84%</span></td>
+                <td>10.36% &rarr; 10.58%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.21%p</span></td>
+                <td>50.57% &rarr; 51.14%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.57%p</span></td>
+            </tr>
+            <tr>
+                <td rowspan="6" style="font-weight: 700; background: #f8fafc; border-right: 1px solid #e2e8f0; text-align: center;">LIG넥스원</td>
+                <td style="font-weight: 500;">Benchmark vs 심리결합</td>
+                <td>24,107.2 &rarr; 24,127.7</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.08%</span></td>
+                <td>3.11% &rarr; 3.11%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.00%p</span></td>
+                <td>50.00% &rarr; 47.47%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-2.53%p</span></td>
+            </tr>
+            <tr>
+                
+                <td style="font-weight: 500;">ARIMA vs 심리결합</td>
+                <td>248,142.4 &rarr; 247,720.0</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.17%</span></td>
+                <td>38.62% &rarr; 38.58%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.03%p</span></td>
+                <td>50.28% &rarr; 50.28%</td>
                 <td><span style="color: #64748b; font-weight:600;">+0.00%p</span></td>
             </tr>
             <tr>
                 
-                <td style="font-weight: 500;">Existing ANN vs 심리결합</td>
-                <td>71,210.9 &rarr; 72,853.7</td>
-                <td><span style="color: #ef4444; font-weight:600;">-2.31%</span></td>
-                <td>6.82% &rarr; 7.63%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-0.81%p</span></td>
-                <td>50.00% &rarr; 42.86%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-7.14%p</span></td>
+                <td style="font-weight: 500;">Existing RF vs 심리결합</td>
+                <td>24,736.3 &rarr; 24,759.4</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.09%</span></td>
+                <td>3.32% &rarr; 3.33%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.01%p</span></td>
+                <td>50.00% &rarr; 50.84%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.84%p</span></td>
             </tr>
             <tr>
-                <td rowspan="4" style="font-weight: 700; background: #f8fafc; border-right: 1px solid #e2e8f0; text-align: center;">삼성전자</td>
-                <td style="font-weight: 500;">Benchmark vs 심리결합</td>
-                <td>9,037.1 &rarr; 13,072.2</td>
-                <td><span style="color: #ef4444; font-weight:600;">-44.65%</span></td>
-                <td>3.77% &rarr; 5.70%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-1.93%p</span></td>
-                <td>50.00% &rarr; 50.00%</td>
+                
+                <td style="font-weight: 500;">Existing ANN vs 심리결합</td>
+                <td>46,286.2 &rarr; 44,744.8</td>
+                <td><span style="color: #2563eb; font-weight:600;">+3.33%</span></td>
+                <td>5.62% &rarr; 5.39%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.23%p</span></td>
+                <td>50.00% &rarr; 50.84%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.84%p</span></td>
+            </tr>
+            <tr>
+                
+                <td style="font-weight: 500;">Extended RF vs 심리결합</td>
+                <td>24,396.2 &rarr; 24,395.7</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.00%</span></td>
+                <td>3.22% &rarr; 3.22%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.00%p</span></td>
+                <td>50.56% &rarr; 50.56%</td>
                 <td><span style="color: #64748b; font-weight:600;">+0.00%p</span></td>
             </tr>
             <tr>
                 
-                <td style="font-weight: 500;">ARIMA vs 심리결합</td>
-                <td>16,482.4 &rarr; 15,278.6</td>
-                <td><span style="color: #2563eb; font-weight:600;">+7.30%</span></td>
-                <td>6.72% &rarr; 6.92%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-0.20%p</span></td>
-                <td>42.86% &rarr; 50.00%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+7.14%p</span></td>
+                <td style="font-weight: 500;">Extended ANN vs 심리결합</td>
+                <td>51,330.9 &rarr; 51,966.8</td>
+                <td><span style="color: #ef4444; font-weight:600;">-1.24%</span></td>
+                <td>6.40% &rarr; 6.51%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.11%p</span></td>
+                <td>48.31% &rarr; 47.19%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-1.12%p</span></td>
+            </tr>
+            <tr>
+                <td rowspan="6" style="font-weight: 700; background: #f8fafc; border-right: 1px solid #e2e8f0; text-align: center;">SNT다이내믹스</td>
+                <td style="font-weight: 500;">Benchmark vs 심리결합</td>
+                <td>1,698.9 &rarr; 1,698.4</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.03%</span></td>
+                <td>2.89% &rarr; 2.90%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.01%p</span></td>
+                <td>51.69% &rarr; 48.31%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-3.37%p</span></td>
             </tr>
             <tr>
                 
-                <td style="font-weight: 500;">Existing RF vs 심리결합</td>
-                <td>10,265.9 &rarr; 13,251.5</td>
-                <td><span style="color: #ef4444; font-weight:600;">-29.08%</span></td>
-                <td>4.51% &rarr; 5.80%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-1.29%p</span></td>
-                <td>50.00% &rarr; 50.00%</td>
+                <td style="font-weight: 500;">ARIMA vs 심리결합</td>
+                <td>24,194.7 &rarr; 24,126.0</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.28%</span></td>
+                <td>42.13% &rarr; 42.06%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.06%p</span></td>
+                <td>50.28% &rarr; 50.28%</td>
                 <td><span style="color: #64748b; font-weight:600;">+0.00%p</span></td>
             </tr>
             <tr>
                 
-                <td style="font-weight: 500;">Existing ANN vs 심리결합</td>
-                <td>9,481.0 &rarr; 13,112.0</td>
-                <td><span style="color: #ef4444; font-weight:600;">-38.30%</span></td>
-                <td>4.16% &rarr; 5.73%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-1.56%p</span></td>
-                <td>57.14% &rarr; 50.00%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-7.14%p</span></td>
+                <td style="font-weight: 500;">Existing RF vs 심리결합</td>
+                <td>1,801.8 &rarr; 1,808.0</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.34%</span></td>
+                <td>3.07% &rarr; 3.09%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.02%p</span></td>
+                <td>46.35% &rarr; 48.03%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+1.69%p</span></td>
             </tr>
             <tr>
-                <td rowspan="4" style="font-weight: 700; background: #f8fafc; border-right: 1px solid #e2e8f0; text-align: center;">SK하이닉스</td>
+                
+                <td style="font-weight: 500;">Existing ANN vs 심리결합</td>
+                <td>1,742.0 &rarr; 1,713.8</td>
+                <td><span style="color: #2563eb; font-weight:600;">+1.62%</span></td>
+                <td>2.99% &rarr; 2.93%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.06%p</span></td>
+                <td>48.31% &rarr; 48.60%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.28%p</span></td>
+            </tr>
+            <tr>
+                
+                <td style="font-weight: 500;">Extended RF vs 심리결합</td>
+                <td>1,769.7 &rarr; 1,764.8</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.27%</span></td>
+                <td>3.13% &rarr; 3.13%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.00%p</span></td>
+                <td>47.75% &rarr; 45.51%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-2.25%p</span></td>
+            </tr>
+            <tr>
+                
+                <td style="font-weight: 500;">Extended ANN vs 심리결합</td>
+                <td>3,021.1 &rarr; 3,077.9</td>
+                <td><span style="color: #ef4444; font-weight:600;">-1.88%</span></td>
+                <td>4.63% &rarr; 4.72%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.09%p</span></td>
+                <td>51.69% &rarr; 51.12%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.56%p</span></td>
+            </tr>
+            <tr>
+                <td rowspan="6" style="font-weight: 700; background: #f8fafc; border-right: 1px solid #e2e8f0; text-align: center;">퍼스텍</td>
                 <td style="font-weight: 500;">Benchmark vs 심리결합</td>
-                <td>55,095.4 &rarr; 89,523.9</td>
-                <td><span style="color: #ef4444; font-weight:600;">-62.49%</span></td>
-                <td>4.87% &rarr; 8.05%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-3.18%p</span></td>
-                <td>40.00% &rarr; 53.33%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+13.33%p</span></td>
+                <td>283.0 &rarr; 290.8</td>
+                <td><span style="color: #ef4444; font-weight:600;">-2.76%</span></td>
+                <td>2.70% &rarr; 2.67%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.03%p</span></td>
+                <td>54.08% &rarr; 57.18%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+3.10%p</span></td>
             </tr>
             <tr>
                 
                 <td style="font-weight: 500;">ARIMA vs 심리결합</td>
-                <td>120,858.1 &rarr; 109,950.7</td>
-                <td><span style="color: #2563eb; font-weight:600;">+9.02%</span></td>
-                <td>9.15% &rarr; 9.77%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-0.61%p</span></td>
-                <td>53.33% &rarr; 46.67%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-6.67%p</span></td>
-            </tr>
-            <tr>
-                
-                <td style="font-weight: 500;">Existing RF vs 심리결합</td>
-                <td>58,049.7 &rarr; 93,877.9</td>
-                <td><span style="color: #ef4444; font-weight:600;">-61.72%</span></td>
-                <td>5.15% &rarr; 8.48%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-3.33%p</span></td>
-                <td>46.67% &rarr; 53.33%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+6.67%p</span></td>
-            </tr>
-            <tr>
-                
-                <td style="font-weight: 500;">Existing ANN vs 심리결합</td>
-                <td>55,503.7 &rarr; 89,350.5</td>
-                <td><span style="color: #ef4444; font-weight:600;">-60.98%</span></td>
-                <td>4.94% &rarr; 8.00%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-3.06%p</span></td>
-                <td>46.67% &rarr; 53.33%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+6.67%p</span></td>
-            </tr>
-            <tr>
-                <td rowspan="4" style="font-weight: 700; background: #f8fafc; border-right: 1px solid #e2e8f0; text-align: center;">SNT다이내믹스</td>
-                <td style="font-weight: 500;">Benchmark vs 심리결합</td>
-                <td>1,913.5 &rarr; 1,739.3</td>
-                <td><span style="color: #2563eb; font-weight:600;">+9.10%</span></td>
-                <td>2.83% &rarr; 2.62%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+0.22%p</span></td>
-                <td>50.00% &rarr; 78.57%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+28.57%p</span></td>
-            </tr>
-            <tr>
-                
-                <td style="font-weight: 500;">ARIMA vs 심리결합</td>
-                <td>4,677.7 &rarr; 9,413.9</td>
-                <td><span style="color: #ef4444; font-weight:600;">-101.25%</span></td>
-                <td>8.26% &rarr; 15.63%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-7.37%p</span></td>
-                <td>64.29% &rarr; 50.00%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-14.29%p</span></td>
-            </tr>
-            <tr>
-                
-                <td style="font-weight: 500;">Existing RF vs 심리결합</td>
-                <td>1,765.6 &rarr; 1,678.2</td>
-                <td><span style="color: #2563eb; font-weight:600;">+4.95%</span></td>
-                <td>2.73% &rarr; 2.53%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+0.20%p</span></td>
-                <td>42.86% &rarr; 71.43%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+28.57%p</span></td>
-            </tr>
-            <tr>
-                
-                <td style="font-weight: 500;">Existing ANN vs 심리결합</td>
-                <td>1,893.2 &rarr; 1,768.2</td>
-                <td><span style="color: #2563eb; font-weight:600;">+6.61%</span></td>
-                <td>2.86% &rarr; 2.59%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+0.27%p</span></td>
-                <td>50.00% &rarr; 71.43%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+21.43%p</span></td>
-            </tr>
-            <tr>
-                <td rowspan="4" style="font-weight: 700; background: #f8fafc; border-right: 1px solid #e2e8f0; text-align: center;">원익IPS</td>
-                <td style="font-weight: 500;">Benchmark vs 심리결합</td>
-                <td>5,547.2 &rarr; 7,326.2</td>
-                <td><span style="color: #ef4444; font-weight:600;">-32.07%</span></td>
-                <td>3.98% &rarr; 4.99%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-1.01%p</span></td>
-                <td>57.14% &rarr; 57.14%</td>
+                <td>1,753.4 &rarr; 1,754.6</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.07%</span></td>
+                <td>19.81% &rarr; 19.80%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.01%p</span></td>
+                <td>56.62% &rarr; 56.62%</td>
                 <td><span style="color: #64748b; font-weight:600;">+0.00%p</span></td>
             </tr>
             <tr>
                 
-                <td style="font-weight: 500;">ARIMA vs 심리결합</td>
-                <td>7,651.4 &rarr; 13,195.4</td>
-                <td><span style="color: #ef4444; font-weight:600;">-72.46%</span></td>
-                <td>5.11% &rarr; 10.39%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-5.28%p</span></td>
-                <td>78.57% &rarr; 50.00%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-28.57%p</span></td>
-            </tr>
-            <tr>
-                
                 <td style="font-weight: 500;">Existing RF vs 심리결합</td>
-                <td>9,072.1 &rarr; 7,703.1</td>
-                <td><span style="color: #2563eb; font-weight:600;">+15.09%</span></td>
-                <td>6.91% &rarr; 5.29%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+1.62%p</span></td>
-                <td>42.86% &rarr; 57.14%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+14.29%p</span></td>
+                <td>289.3 &rarr; 288.0</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.44%</span></td>
+                <td>2.89% &rarr; 2.89%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.01%p</span></td>
+                <td>51.83% &rarr; 51.27%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.56%p</span></td>
             </tr>
             <tr>
                 
                 <td style="font-weight: 500;">Existing ANN vs 심리결합</td>
-                <td>6,453.9 &rarr; 7,478.4</td>
-                <td><span style="color: #ef4444; font-weight:600;">-15.87%</span></td>
-                <td>4.58% &rarr; 5.10%</td>
-                <td><span style="color: #ef4444; font-weight:600;">-0.51%p</span></td>
-                <td>21.43% &rarr; 57.14%</td>
-                <td><span style="color: #2563eb; font-weight:600;">+35.71%p</span></td>
+                <td>313.4 &rarr; 321.5</td>
+                <td><span style="color: #ef4444; font-weight:600;">-2.56%</span></td>
+                <td>2.72% &rarr; 2.72%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.00%p</span></td>
+                <td>53.52% &rarr; 55.21%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+1.69%p</span></td>
+            </tr>
+            <tr>
+                
+                <td style="font-weight: 500;">Extended RF vs 심리결합</td>
+                <td>297.7 &rarr; 295.8</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.62%</span></td>
+                <td>3.27% &rarr; 3.29%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.02%p</span></td>
+                <td>49.58% &rarr; 49.01%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-0.56%p</span></td>
+            </tr>
+            <tr>
+                
+                <td style="font-weight: 500;">Extended ANN vs 심리결합</td>
+                <td>325.0 &rarr; 318.8</td>
+                <td><span style="color: #2563eb; font-weight:600;">+1.92%</span></td>
+                <td>2.83% &rarr; 2.81%</td>
+                <td><span style="color: #2563eb; font-weight:600;">+0.01%p</span></td>
+                <td>52.11% &rarr; 49.86%</td>
+                <td><span style="color: #ef4444; font-weight:600;">-2.25%p</span></td>
             </tr>
                     </tbody>
                 </table>
@@ -710,8 +884,8 @@
     <script>
         const ctx = document.getElementById('rmseChart').getContext('2d');
         const chartData = {
-            labels: ["동진쎄미켐", "퍼스텍", "한화에어로스페이스", "LIG넥스원", "삼성전자", "SK하이닉스", "SNT다이내믹스", "원익IPS"],
-            datasets: [{"label": "Benchmark", "data": [2440.218569445505, 964.9801379648528, 53362.90846646198, 64954.856118178985, 9037.05335456936, 55095.37185644544, 1913.4610874886723, 5547.191481581768], "backgroundColor": "#64748b", "borderColor": "#64748b", "borderWidth": 1}, {"label": "Benchmark + 심리지수 결합모델", "data": [3781.6005190373726, 1456.100130084899, 58189.77784113739, 64353.40841155334, 13072.238240389412, 89523.85218320775, 1739.2971840916684, 7326.237242161794], "backgroundColor": "#1e40af", "borderColor": "#1e40af", "borderWidth": 1}, {"label": "ARIMA", "data": [3226.364741277765, 4396.228641918435, 340346.16085589665, 365260.0517728389, 16482.369309273745, 120858.09686169478, 4677.698179954958, 7651.38189587354], "backgroundColor": "#a1a1aa", "borderColor": "#a1a1aa", "borderWidth": 1}, {"label": "ARIMA + 심리지수 결합모델", "data": [3259.75327476165, 2016.2305982198127, 69740.98571728985, 60595.08326635984, 15278.602958462136, 109950.69013164008, 9413.870676165408, 13195.43754975189], "backgroundColor": "#d97706", "borderColor": "#d97706", "borderWidth": 1}, {"label": "Existing RF", "data": [2226.1687495790457, 955.260660928732, 66601.83937717004, 100917.6615456081, 10265.948509640944, 58049.66232061084, 1765.648106255299, 9072.1074560314], "backgroundColor": "#93c5fd", "borderColor": "#93c5fd", "borderWidth": 1}, {"label": "Existing RF + 심리지수 결합모델", "data": [3813.2189525301887, 1394.9150971422043, 62958.41431797737, 85373.62549424257, 13251.527893414244, 93877.9060379972, 1678.2457038277323, 7703.075278063307], "backgroundColor": "#2563eb", "borderColor": "#2563eb", "borderWidth": 1}, {"label": "Extended RF", "data": [2200.6120962960467, 988.130468361672, 67536.24158911464, 107585.15287550716, 10412.51843553982, 57883.72983083962, 1686.7635518831084, 11248.243031226237], "backgroundColor": "#10b981", "borderColor": "#10b981", "borderWidth": 1}, {"label": "Existing ANN", "data": [2435.87861113455, 1050.5636719550123, 53530.934359520055, 71210.93253704312, 9480.959917985483, 55503.71394535514, 1893.2382609895544, 6453.891241551669], "backgroundColor": "#fca5a5", "borderColor": "#fca5a5", "borderWidth": 1}, {"label": "Existing ANN + 심리지수 결합모델", "data": [3691.829321351819, 1521.5861850569454, 61771.20316519355, 72853.67761263519, 13111.969350292098, 89350.50722386871, 1768.1832622060083, 7478.382056359047], "backgroundColor": "#dc2626", "borderColor": "#dc2626", "borderWidth": 1}, {"label": "Extended ANN", "data": [2439.2731472155147, 977.1441520693712, 52930.11523901216, 66615.20435715815, 8998.478794515097, 115175.9990851666, 1889.984515827371, 5453.574991311132], "backgroundColor": "#8b5cf6", "borderColor": "#8b5cf6", "borderWidth": 1}]
+            labels: ["삼성전자", "SK하이닉스", "원익IPS", "동진쎄미켐", "한화에어로스페이스", "LIG넥스원", "SNT다이내믹스", "퍼스텍"],
+            datasets: [{"label": "Benchmark", "data": [4018.859601055653, 24249.027818451937, 3979.167975566975, 1440.3510374596572, 35767.90108094921, 24107.245792912305, 1698.9110039786592, 282.9789863957623], "backgroundColor": "#64748b", "borderColor": "#64748b", "borderWidth": 1}, {"label": "Benchmark + 심리지수 결합모델", "data": [4126.31164932541, 24618.158127898103, 4035.08147106768, 1447.1220827445766, 35683.97536642269, 24127.723415370838, 1698.415519626651, 290.775985889511], "backgroundColor": "#1e40af", "borderColor": "#1e40af", "borderWidth": 1}, {"label": "ARIMA", "data": [50339.65581848357, 372015.1420939396, 35632.76418156955, 8213.502454168776, 596470.2492564267, 248142.42111946736, 24194.704740006808, 1753.3707303303563], "backgroundColor": "#a1a1aa", "borderColor": "#a1a1aa", "borderWidth": 1}, {"label": "ARIMA + 심리지수 결합모델", "data": [50391.39758570853, 371935.9158263081, 35587.07934683155, 8236.8858335404, 595165.3137308622, 247720.0321033469, 24125.964530734043, 1754.5678218460002], "backgroundColor": "#d97706", "borderColor": "#d97706", "borderWidth": 1}, {"label": "Existing RF", "data": [5496.428820669813, 28738.823971267884, 3946.12169785886, 1467.6670046592574, 35514.190823000434, 24736.274140507056, 1801.8313967948573, 289.2773289300351], "backgroundColor": "#93c5fd", "borderColor": "#93c5fd", "borderWidth": 1}, {"label": "Existing RF + 심리지수 결합모델", "data": [5419.5962247425705, 28123.68934634043, 3945.716978418636, 1462.8070701264926, 35507.317243214966, 24759.37601938087, 1807.956430073379, 288.0171463375677], "backgroundColor": "#2563eb", "borderColor": "#2563eb", "borderWidth": 1}, {"label": "Existing ANN", "data": [4280.434850511023, 61383.41356291143, 6842.744243220335, 1454.4750047264372, 52604.05760056884, 46286.17098570916, 1741.9652860059025, 313.4259324458533], "backgroundColor": "#fca5a5", "borderColor": "#fca5a5", "borderWidth": 1}, {"label": "Existing ANN + 심리지수 결합모델", "data": [4260.469021746631, 61932.08795420525, 6821.6823933975365, 1465.5512373531933, 51010.63597362613, 44744.794309934565, 1713.8092636610015, 321.4538227573434], "backgroundColor": "#dc2626", "borderColor": "#dc2626", "borderWidth": 1}, {"label": "Extended RF", "data": [5244.434012759888, 27539.285203526277, 4091.654705026002, 1541.9484459198477, 36848.02239702858, 24396.22999735014, 1769.6919974229706, 297.6972113300172], "backgroundColor": "#86efac", "borderColor": "#86efac", "borderWidth": 1}, {"label": "Extended RF + 심리지수 결합모델", "data": [5154.71661468189, 26976.85016953277, 4069.728966069468, 1539.4632694103989, 36755.38821890212, 24395.678361780567, 1764.8396830601423, 295.8432507187227], "backgroundColor": "#16a34a", "borderColor": "#16a34a", "borderWidth": 1}, {"label": "Extended ANN", "data": [4035.738233974329, 65839.5298823369, 4025.1164534456025, 1515.205950320034, 187590.51114892185, 51330.89418211729, 3021.081196252277, 325.0064028640411], "backgroundColor": "#d8b4fe", "borderColor": "#d8b4fe", "borderWidth": 1}, {"label": "Extended ANN + 심리지수 결합모델", "data": [4115.95640120639, 67119.18764190916, 4076.58829188388, 1551.1126297034673, 189170.6551925544, 51966.78145487784, 3077.8540750058173, 318.75962295191044], "backgroundColor": "#9333ea", "borderColor": "#9333ea", "borderWidth": 1}]
         };
         
         new Chart(ctx, {
